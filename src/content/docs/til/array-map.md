@@ -2,6 +2,9 @@
 title: 배열을 변환하는 map
 description: 배열의 각 값을 변환해 새 배열을 만드는 JavaScript 메서드를 정리한 예시입니다.
 publishedAt: 2026-10-06T09:00:00+09:00
+draft: true
+sidebar:
+  hidden: true
 tags:
   - JavaScript
   - TIL

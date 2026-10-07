@@ -12,3 +12,5 @@ description: 개발과 일상을 기록하는 공간입니다.
 - **개발**: 구현 과정, 문제 해결, 기술에 대한 생각
 - **TIL**: 오늘 배운 개념과 짧은 실험
 - **일상·회고**: 경험을 돌아보며 남기는 개인 기록
+
+[GitHub 프로필](https://github.com/parktaesu123) · [블로그 저장소](https://github.com/parktaesu123/blog)

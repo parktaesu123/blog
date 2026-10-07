@@ -16,7 +16,11 @@ export default defineConfig({
     defaultLocale: 'root',
     locales: { root: { label: '한국어', lang: 'ko' } },
     favicon: '/favicon.svg',
-    components: { PageTitle: './src/components/PageTitle.astro' },
+    components: {
+      PageTitle: './src/components/PageTitle.astro',
+      Footer: './src/components/Footer.astro',
+    },
+    editLink: { baseUrl: `https://github.com/${blog.repository}/edit/main/` },
     customCss: ['./src/styles/custom.css'],
     sidebar: [
       { label: '홈', link: '/' },

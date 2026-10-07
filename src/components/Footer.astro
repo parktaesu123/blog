@@ -1,0 +1,11 @@
+---
+import StarlightFooter from '@astrojs/starlight/components/Footer.astro';
+import Comments from './Comments.astro';
+import { blog } from '../../blog.config.mjs';
+
+const { entry } = Astro.locals.starlightRoute;
+const showComments = blog.comments.enabled && entry.data.publishedAt && !entry.data.draft && entry.data.comments;
+---
+
+<StarlightFooter />
+{showComments && <Comments />}

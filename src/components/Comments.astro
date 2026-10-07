@@ -1,0 +1,71 @@
+---
+import { blog } from '../../blog.config.mjs';
+---
+
+<section class="article-comments print:hidden" aria-labelledby="comments-heading" data-pagefind-ignore>
+  <h2 id="comments-heading">댓글과 반응</h2>
+  <p>GitHub 계정으로 댓글과 좋아요를 남길 수 있습니다.</p>
+  <giscus-comments
+    data-repo={blog.repository}
+    data-repo-id={blog.comments.repoId}
+    data-category={blog.comments.category}
+    data-category-id={blog.comments.categoryId}
+    data-mapping="pathname"
+    data-strict="1"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-lang="ko"
+    data-loading="lazy"
+  >
+    <div class="giscus"></div>
+  </giscus-comments>
+  <noscript>
+    댓글을 표시하려면 JavaScript를 켜 주세요.
+    <a href={`https://github.com/${blog.repository}/discussions`}>GitHub에서 댓글 보기</a>
+  </noscript>
+</section>
+
+<script>
+  class GiscusComments extends HTMLElement {
+    private observer?: MutationObserver;
+
+    connectedCallback() {
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+      for (const { name, value } of this.attributes) {
+        if (name.startsWith('data-')) script.setAttribute(name, value);
+      }
+      script.dataset.theme = this.theme();
+      this.querySelector('.giscus')!.append(script);
+
+      this.observer = new MutationObserver(() => {
+        script.dataset.theme = this.theme();
+        this.querySelector<HTMLIFrameElement>('iframe.giscus-frame')?.contentWindow?.postMessage(
+          { giscus: { setConfig: { theme: this.theme() } } },
+          'https://giscus.app',
+        );
+      });
+      this.observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    }
+
+    disconnectedCallback() {
+      this.observer?.disconnect();
+    }
+
+    private theme() {
+      return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+    }
+  }
+
+  if (!customElements.get('giscus-comments')) customElements.define('giscus-comments', GiscusComments);
+</script>
+
+<style>
+  .article-comments { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--sl-color-hairline); }
+  h2 { font-size: 1.35rem; color: var(--sl-color-white); }
+  p { margin: .5rem 0 1.5rem; font-size: .875rem; color: var(--sl-color-gray-2); }
+  giscus-comments { display: block; min-height: 12rem; }
+</style>

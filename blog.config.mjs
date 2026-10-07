@@ -1,7 +1,15 @@
 // 블로그 이름과 소개는 이 파일에서 바꿉니다.
 export const blog = {
   site: 'https://blog.taisu.site',
-  title: '개발 노트',
+  title: '태수의 개발 노트',
   description: '개발하며 배운 것과 일상에서 발견한 것을 기록합니다.',
   author: '태수',
+  repository: 'parktaesu123/blog',
+  comments: {
+    // GitHub에서 이 저장소에 Giscus 앱을 설치한 뒤 true로 변경합니다.
+    enabled: false,
+    repoId: 'R_kgDOU_E-Rg',
+    category: 'Announcements',
+    categoryId: 'DIC_kwDOU_E-Rs4DHOvY',
+  },
 };

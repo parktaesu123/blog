@@ -1,7 +1,40 @@
-# 개발 노트
+# 태수의 개발 노트
 
 Markdown·MDX를 글의 원본으로 사용하는 Astro + Starlight 개인 블로그입니다.
 글 목록과 태그 페이지를 빌드할 때 생성하고, GitHub Actions로 GitHub Pages에 배포합니다.
+
+블로그: **[blog.taisu.site](https://blog.taisu.site/)**
+
+## GitHub에서 글 관리하기
+
+별도 프로그램 설치 없이 이 저장소의 파일 편집 기능으로 글을 관리할 수 있습니다.
+
+### 새 글 작성
+
+1. [글 템플릿](templates/post.md)의 내용을 복사합니다.
+2. 주제에 맞는 링크를 열어 파일 이름을 `my-post.md`처럼 입력하고 템플릿을 붙여 넣습니다.
+   - [개발 글 작성](https://github.com/parktaesu123/blog/new/main/src/content/docs/development)
+   - [TIL 작성](https://github.com/parktaesu123/blog/new/main/src/content/docs/til)
+   - [일상·회고 작성](https://github.com/parktaesu123/blog/new/main/src/content/docs/life)
+3. 제목, 소개, 발행일, 태그와 본문을 작성합니다. 발행일은 실제 발행 날짜로 바꿉니다.
+4. 발행하려면 `draft: true`와 `sidebar: hidden: true` 설정을 삭제합니다. 초안으로 보관하려면 그대로 둡니다.
+5. **Commit changes**에서 `main`에 저장합니다. [Actions](https://github.com/parktaesu123/blog/actions)에서 배포가 완료되면 사이트에 반영됩니다.
+
+본문 작성 예시는 아래 `글 쓰기` 항목을 참고합니다. 파일 이름은 짧은 영문으로 정하는 편이 좋습니다.
+초안은 블로그의 목록·검색·메뉴에 표시되지 않지만, 공개 GitHub 저장소에서는 파일을 볼 수 있습니다.
+
+### 수정
+
+블로그 글 아래의 **페이지 편집** 링크를 누르거나, [글 폴더](https://github.com/parktaesu123/blog/tree/main/src/content/docs)에서 파일을 열고 연필 버튼을 누릅니다.
+본문을 수정하고 필요하면 `updatedAt: 2026-10-07T18:00:00+09:00`을 추가한 뒤 커밋합니다.
+`publishedAt`은 기존 발행일을 유지합니다. 파일 이름을 바꾸면 URL과 연결된 댓글도 달라지므로 그대로 유지합니다.
+
+### 비공개로 전환하거나 삭제
+
+- **발행 취소**: 글에 `draft: true`와 `sidebar: { hidden: true }`를 추가하고 커밋합니다.
+- **삭제**: GitHub에서 해당 파일을 열고 파일 메뉴의 **Delete file**로 삭제한 뒤 커밋합니다.
+- 삭제·수정한 내용은 Git 커밋 이력에서 복구할 수 있습니다.
+- 글을 삭제해도 댓글 Discussion은 남습니다. 댓글까지 정리하려면 [Discussions](https://github.com/parktaesu123/blog/discussions)에서 해당 글의 토론을 관리합니다.
 
 ## 실행
 
@@ -24,6 +57,8 @@ bun run preview # 빌드 결과 미리보기 (검색 포함)
 
 ```text
 blog.config.mjs             블로그 이름·소개
+giscus.json                 댓글을 표시할 수 있는 도메인
+templates/post.md           새 글 템플릿 (블로그에 배포되지 않음)
 astro.config.mjs            프레임워크·메뉴·배포 경로 설정
 src/content.config.ts      글 메타데이터 스키마
 src/content/docs/          Markdown·MDX 콘텐츠
@@ -62,9 +97,29 @@ tags:
 작성 중인 글에는 `draft: true`와 `sidebar: { hidden: true }`를 넣습니다.
 발행할 때 두 설정을 제거하면 목록·메뉴·태그·검색에 포함됩니다.
 
-초기 글들은 사용법을 보여주는 예시이며 자유롭게 교체할 수 있습니다.
+첫 공개 글은 실제 블로그 구축 과정을 정리한 글입니다. 이전 TIL·회고 예시는 초안으로 보관했습니다.
 큰 사이드바 지연 로딩이나 외부 TIL 동기화는 필요해질 때 추가할 수 있습니다.
 Starlight 내부 소스를 복사하지 않고 공개 확장 API를 사용합니다.
+
+## 댓글과 좋아요
+
+Giscus 연결 코드는 준비되어 있습니다. 현재는 GitHub 앱 설치를 기다리는 동안 `comments.enabled: false`로 비활성화했습니다.
+이 저장소에 [Giscus 앱](https://github.com/apps/giscus)을 설치한 뒤 `blog.config.mjs`의 `comments.enabled`를 `true`로 변경하고 커밋하면 활성화됩니다.
+
+활성화하면 발행한 글 아래에 Giscus를 표시합니다. 방문자는 GitHub 계정으로 로그인해 댓글과 반응(좋아요, 하트 등)을 남깁니다.
+댓글은 `parktaesu123/blog` 저장소의 **Announcements** Discussion에 저장됩니다.
+글 주소를 기준으로 연결하며, 첫 댓글이나 반응이 달릴 때 토론이 생성됩니다.
+홈·소개·글 목록과 초안에는 댓글을 표시하지 않습니다.
+
+- 설정: `blog.config.mjs`의 `comments`와 `repository`
+- 특정 글에서 끄기: frontmatter에 `comments: false`
+- 전체 블로그에서 끄기: `comments.enabled: false`
+- 댓글 관리: [GitHub Discussions](https://github.com/parktaesu123/blog/discussions)
+- 테마: 블로그의 밝은/어두운 설정을 따릅니다.
+- 도메인을 바꿀 때는 `giscus.json`의 `origins`도 변경합니다.
+
+GitHub 저장소에 Discussions가 활성화되어 있고 [Giscus 앱](https://github.com/apps/giscus)이 이 저장소에 설치되어 있어야 작동합니다.
+저장소 ID와 카테고리 ID는 공개 설정값이며 비밀번호나 토큰을 사이트 코드에 넣지 않습니다.
 
 ## GitHub Pages 배포
 
