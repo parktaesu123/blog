@@ -72,7 +72,9 @@ Starlight 내부 소스를 복사하지 않고 공개 확장 API를 사용합니
 2. 저장소의 **Settings → Pages → Source**에서 **GitHub Actions**를 선택합니다.
 3. `main`에 커밋하면 검증·빌드·배포가 실행됩니다.
 
-워크플로가 `GITHUB_REPOSITORY`를 읽어 사이트 주소와 하위 경로를 자동 설정합니다.
+현재 공식 주소는 **https://blog.taisu.site/**이며 `blog.config.mjs`에서 관리합니다.
+개인 도메인을 사용하지 않으려면 `blog.site` 설정을 제거합니다.
+그 경우 워크플로가 `GITHUB_REPOSITORY`를 읽어 사이트 주소와 하위 경로를 자동 설정합니다.
 
 - `owner/blog` → `https://owner.github.io/blog/`
 - `owner/owner.github.io` → `https://owner.github.io/`
@@ -81,15 +83,25 @@ Starlight 내부 소스를 복사하지 않고 공개 확장 API를 사용합니
 
 ### 개인 도메인
 
-저장소의 **Settings → Secrets and variables → Actions → Variables**에
-`PUBLIC_SITE_URL=https://your-domain.com`, `PUBLIC_BASE_PATH=/`를 설정합니다.
-이후 Pages의 Custom domain과 도메인 DNS를 설정하고, 해당 도메인을 한 줄로 적은
-`public/CNAME` 파일을 추가합니다. 개인 도메인이 없는 경우 이 설정은 필요 없습니다.
+`blog.config.mjs`의 `site`에 도메인을 설정하고 GitHub Pages의 Custom domain에도 같은 도메인을 입력합니다.
+GitHub Actions 방식으로 배포하므로 `public/CNAME` 파일은 필요 없습니다.
+
+현재 Cloudflare에서 필요한 DNS 레코드는 다음과 같습니다.
+
+| 유형 | 이름 | 대상 | 프록시 |
+| --- | --- | --- | --- |
+| CNAME | blog | parktaesu123.github.io | DNS only (회색 구름) |
+
+대상에는 `https://`나 `/blog/`를 넣지 않습니다. DNS가 연결되면 GitHub Pages에서 HTTPS 인증서를 발급합니다.
+인증서가 준비되면 Pages 설정에서 Enforce HTTPS를 활성화합니다.
+
+임시로 다른 주소에서 빌드하려면 `PUBLIC_SITE_URL`, `PUBLIC_BASE_PATH` 환경 변수 또는
+GitHub Actions Repository Variables로 설정을 덮어쓸 수 있습니다.
 
 ### 하위 경로 검증
 
 ```sh
-GITHUB_REPOSITORY=example/blog bun run build
+PUBLIC_SITE_URL=https://example.github.io PUBLIC_BASE_PATH=/blog/ bun run build
 ```
 
 모든 내부 링크와 정적 파일이 `/blog/` 경로를 포함하는지 검사합니다.
