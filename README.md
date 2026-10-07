@@ -103,10 +103,8 @@ Starlight 내부 소스를 복사하지 않고 공개 확장 API를 사용합니
 
 ## 댓글과 좋아요
 
-Giscus 연결 코드는 준비되어 있습니다. 현재는 GitHub 앱 설치를 기다리는 동안 `comments.enabled: false`로 비활성화했습니다.
-이 저장소에 [Giscus 앱](https://github.com/apps/giscus)을 설치한 뒤 `blog.config.mjs`의 `comments.enabled`를 `true`로 변경하고 커밋하면 활성화됩니다.
-
-활성화하면 발행한 글 아래에 Giscus를 표시합니다. 방문자는 GitHub 계정으로 로그인해 댓글과 반응(좋아요, 하트 등)을 남깁니다.
+[Giscus 앱](https://github.com/apps/giscus)을 `parktaesu123/blog` 저장소에 설치하고 댓글·반응 기능을 활성화했습니다.
+발행한 글 아래에 Giscus를 표시합니다. 방문자는 GitHub 계정으로 로그인해 댓글과 반응(좋아요, 하트 등)을 남깁니다.
 댓글은 `parktaesu123/blog` 저장소의 **Announcements** Discussion에 저장됩니다.
 글 주소를 기준으로 연결하며, 첫 댓글이나 반응이 달릴 때 토론이 생성됩니다.
 홈·소개·글 목록과 초안에는 댓글을 표시하지 않습니다.

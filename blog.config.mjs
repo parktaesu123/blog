@@ -6,8 +6,7 @@ export const blog = {
   author: '태수',
   repository: 'parktaesu123/blog',
   comments: {
-    // GitHub에서 이 저장소에 Giscus 앱을 설치한 뒤 true로 변경합니다.
-    enabled: false,
+    enabled: true,
     repoId: 'R_kgDOU_E-Rg',
     category: 'Announcements',
     categoryId: 'DIC_kwDOU_E-Rs4DHOvY',
