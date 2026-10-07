@@ -1,0 +1,22 @@
+---
+import { categoryOf, formatDate, type Post } from '../utils/posts';
+import { sitePath, tagPath } from '../utils/paths';
+interface Props { posts: Post[]; }
+const { posts } = Astro.props;
+---
+<div class="post-list">
+  {posts.length === 0 && <p>아직 발행된 글이 없습니다.</p>}
+  {posts.map((post) => (
+    <article class="post-item">
+      <div class="post-meta">
+        <span>{categoryOf(post)}</span>
+        {post.data.publishedAt && <time datetime={post.data.publishedAt.toISOString()}>{formatDate(post.data.publishedAt)}</time>}
+      </div>
+      <h3><a href={sitePath(`${post.id}/`)}>{post.data.title}</a></h3>
+      {post.data.description && <p>{post.data.description}</p>}
+      {post.data.tags.length > 0 && <ul class="post-tags" aria-label="태그">
+        {post.data.tags.map((tag) => <li><a href={tagPath(tag)}>{tag}</a></li>)}
+      </ul>}
+    </article>
+  ))}
+</div>

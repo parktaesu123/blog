@@ -1,0 +1,15 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import PostList from '../../components/PostList.astro';
+import { getPosts, tagsOf } from '../../utils/posts';
+import { tagPath } from '../../utils/paths';
+const posts = await getPosts();
+const tags = tagsOf(posts);
+---
+<StarlightPage frontmatter={{ title: '모든 글', description: '개발과 일상의 기록을 발행일 순으로 모았습니다.', tableOfContents: false }}>
+  <p>{posts.length}개의 글</p>
+  <ul class="post-tags" aria-label="태그별 글 보기">
+    {tags.map((tag) => <li><a href={tagPath(tag)}>{tag}</a></li>)}
+  </ul>
+  <PostList posts={posts} />
+</StarlightPage>

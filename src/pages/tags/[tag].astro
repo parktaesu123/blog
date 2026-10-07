@@ -1,0 +1,20 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import PostList from '../../components/PostList.astro';
+import { getPosts, tagsOf, type Post } from '../../utils/posts';
+import { sitePath } from '../../utils/paths';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return tagsOf(posts).map((tag) => ({
+    params: { tag },
+    props: { tag, posts: posts.filter((post) => post.data.tags.includes(tag)) },
+  }));
+}
+interface Props { tag: string; posts: Post[]; }
+const { tag, posts } = Astro.props;
+---
+<StarlightPage frontmatter={{ title: `태그: ${tag}`, description: `${tag}에 관한 글 모음`, tableOfContents: false }}>
+  <p>{posts.length}개의 글 · <a href={sitePath('posts/')}>모든 글 보기</a></p>
+  <PostList posts={posts} />
+</StarlightPage>

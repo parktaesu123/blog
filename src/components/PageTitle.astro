@@ -1,0 +1,13 @@
+---
+import { formatDate } from '../utils/posts';
+import { tagPath } from '../utils/paths';
+const { entry } = Astro.locals.starlightRoute;
+---
+<h1 id="_top">{entry.data.title}</h1>
+{entry.data.publishedAt && <div class="article-meta">
+  <span>발행 <time datetime={entry.data.publishedAt.toISOString()}>{formatDate(entry.data.publishedAt)}</time></span>
+  {entry.data.updatedAt && <span>수정 <time datetime={entry.data.updatedAt.toISOString()}>{formatDate(entry.data.updatedAt)}</time></span>}
+</div>}
+{entry.data.tags.length > 0 && <ul class="post-tags" aria-label="태그">
+  {entry.data.tags.map((tag) => <li><a href={tagPath(tag)}>{tag}</a></li>)}
+</ul>}

@@ -1,0 +1,11 @@
+---
+import PostList from './PostList.astro';
+import { getPosts } from '../utils/posts';
+import { sitePath } from '../utils/paths';
+const posts = (await getPosts()).slice(0, 5);
+---
+<section aria-labelledby="recent-posts">
+  <h2 id="recent-posts">최근 글</h2>
+  <PostList posts={posts} />
+  <p><a href={sitePath('posts/')}>모든 글 보기</a></p>
+</section>
