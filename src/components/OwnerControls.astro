@@ -4,7 +4,7 @@ interface Props { article?: string; }
 const { article } = Astro.props;
 const managePath = sitePath('admin/');
 ---
-<owner-controls data-article={article} data-manage={managePath} class="print:hidden">
+<owner-controls data-article={article} data-manage={managePath} data-pagefind-ignore>
   {!article && <a data-login href={managePath}>로그인</a>}
   <a data-owner hidden href={article ? `${managePath}?post=${encodeURIComponent(article)}` : managePath}>
     {article ? '이 글 수정' : '글 관리'}
@@ -31,7 +31,7 @@ const managePath = sitePath('admin/');
 </script>
 <style>
   owner-controls { flex: none; font-size: .85rem; white-space: nowrap; }
-  a { color: var(--sl-color-text-accent); text-decoration: none; }
+  a { color: var(--text); text-decoration: none; }
   a:hover { text-decoration: underline; }
   [hidden] { display: none !important; }
 </style>

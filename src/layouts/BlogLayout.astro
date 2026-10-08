@@ -1,0 +1,38 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import Search from '../components/Search.astro';
+import { blog } from '../../blog.config.mjs';
+import { design } from '../utils/design';
+import { sitePath } from '../utils/paths';
+import '../styles/custom.css';
+interface Props { title: string; description?: string; variant?: 'home' | 'article' | 'page' | 'admin'; searchBody?: boolean; }
+const { title, description = blog.description, variant = 'page', searchBody = false } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="ko" data-theme={design.palette === 'night' ? 'dark' : 'light'} data-palette={design.palette} data-font={design.font} style={`--accent:${design.accent}`}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · {blog.title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={sitePath('favicon.svg')} />
+    <meta property="og:type" content={variant === 'article' ? 'article' : 'website'} />
+    <meta property="og:title" content={title} /><meta property="og:description" content={description} /><meta property="og:url" content={canonical} />
+    {variant === 'admin' && <meta name="robots" content="noindex,nofollow" />}
+    <script is:inline>try { const value = localStorage.getItem('taisu-color-mode'); if (value === 'light' || value === 'dark') document.documentElement.dataset.theme = value; } catch {}</script>
+  </head>
+  <body class={`view-${variant}`}>
+    <a class="skip-link" href="#main-content">본문으로 이동</a>
+    <div class="site-shell"><Header /><main id="main-content" data-pagefind-body={searchBody || undefined}><slot /></main><Footer /></div>
+    <Search />
+    <script>
+      const toggle = document.getElementById('theme-toggle')!;
+      function label() { toggle.setAttribute('aria-label', `${document.documentElement.dataset.theme === 'dark' ? '밝은' : '어두운'} 테마로 전환`); }
+      label();
+      toggle.addEventListener('click', () => { const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = theme; try { localStorage.setItem('taisu-color-mode', theme); } catch {} label(); });
+    </script>
+  </body>
+</html>

@@ -1,13 +1,15 @@
 ---
 import { categoryOf, formatDate, type Post } from '../utils/posts';
 import { sitePath, tagPath } from '../utils/paths';
+import { design } from '../utils/design';
 interface Props { posts: Post[]; }
 const { posts } = Astro.props;
 ---
-<div class="post-list">
+<div class="post-list" data-layout={design.layout}>
   {posts.length === 0 && <p>아직 발행된 글이 없습니다.</p>}
-  {posts.map((post) => (
-    <article class="post-item">
+  {posts.map((post, index) => (
+    <article class="post-item" data-category={post.id.split('/')[0]}>
+      <span class="post-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span><div class="post-summary">
       <div class="post-meta">
         <span>{categoryOf(post)}</span>
         {post.data.publishedAt && <time datetime={post.data.publishedAt.toISOString()}>{formatDate(post.data.publishedAt)}</time>}
@@ -17,6 +19,7 @@ const { posts } = Astro.props;
       {post.data.tags.length > 0 && <ul class="post-tags" aria-label="태그">
         {post.data.tags.map((tag) => <li><a href={tagPath(tag)}>{tag}</a></li>)}
       </ul>}
+      </div><a class="post-arrow" href={sitePath(`${post.id}/`)} aria-label={`${post.data.title} 읽기`}>↗</a>
     </article>
   ))}
 </div>

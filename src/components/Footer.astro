@@ -1,13 +1,4 @@
 ---
-import StarlightFooter from '@astrojs/starlight/components/Footer.astro';
-import Comments from './Comments.astro';
 import { blog } from '../../blog.config.mjs';
-import OwnerControls from './OwnerControls.astro';
-
-const { entry } = Astro.locals.starlightRoute;
-const showComments = blog.comments.enabled && entry.data.publishedAt && !entry.data.draft && entry.data.comments;
 ---
-
-<StarlightFooter />
-{entry.data.publishedAt && <OwnerControls article={entry.id} />}
-{showComments && <Comments />}
+<footer class="site-footer"><span>© {new Date().getFullYear()} {blog.author}</span><a href={`https://github.com/${blog.repository}`}>GitHub ↗</a><span class="footer-note">차곡차곡 남기는 기록</span></footer>

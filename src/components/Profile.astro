@@ -1,0 +1,21 @@
+---
+import { blog } from '../../blog.config.mjs';
+import { design } from '../utils/design';
+import { sitePath } from '../utils/paths';
+---
+<aside class="profile-panel" aria-label="프로필">
+  <div class="profile-avatar" aria-hidden="true">
+    {design.avatar ? <img src={design.avatar} alt="" width="76" height="76" /> : 't.'}
+  </div>
+  <h1>{blog.author}</h1>
+  <p class="profile-subtitle">개발과 일상의 기록</p>
+  <p class="profile-bio">{design.intro}</p>
+  <div class="profile-links">
+    <a href={`https://github.com/${blog.admin.owner}`}>GitHub ↗</a>
+    <a href={sitePath('about/')}>소개 ↗</a>
+  </div>
+  <div class="profile-note">
+    이 공간에 남기는 것들
+    <span>개발 · TIL · 일상과 회고</span>
+  </div>
+</aside>

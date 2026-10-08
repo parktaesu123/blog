@@ -1,7 +1,9 @@
 ---
-import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import BlogLayout from '../../layouts/BlogLayout.astro';
+import { sitePath } from '../../utils/paths';
 ---
-<StarlightPage frontmatter={{ title: '글 관리', description: '작성자 전용 글 관리', tableOfContents: false, pagefind: false }}>
+<BlogLayout title="글 관리" variant="admin">
+  <header class="page-heading admin-page-heading"><div><p class="eyebrow">WORKSPACE</p><h1>나의 기록실</h1></div><a class="text-link" href={sitePath()}>블로그 보기 ↗</a></header>
   <div id="blog-admin" class="admin-view" data-pagefind-ignore>
     <p id="admin-status" role="status">로그인 상태를 확인하고 있습니다.</p>
     <div id="admin-login" hidden>
@@ -15,7 +17,7 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
         <button id="refresh-posts" type="button">목록 새로고침</button>
         <button id="admin-logout" type="button">로그아웃</button>
       </div>
-      <div id="admin-posts" class="admin-posts" aria-label="내 글 목록"></div>
+      <div class="workspace-layout"><div id="admin-posts" class="admin-posts" aria-label="내 글 목록"></div>
       <form id="post-editor" hidden>
         <div class="editor-heading">
           <h2 id="editor-heading">새 글 작성</h2>
@@ -49,7 +51,7 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
         </div>
         <p class="editor-note">Markdown으로 작성하세요. # 제목, **굵게**, 목록, 코드 블록을 미리보기에서 확인할 수 있습니다. 이미지는 본문에 붙여넣거나 끌어놓으세요. PNG·JPG·GIF·WebP, 파일당 최대 5MB.</p>
         <label id="body-label" class="body-label">본문<textarea id="post-body" name="body" rows="18" placeholder="## 오늘 배운 것&#10;&#10;Markdown으로 작성하고 이미지를 붙여넣어 보세요."></textarea></label>
-        <div id="post-preview" class="sl-markdown-content editor-preview" hidden></div>
+        <div id="post-preview" class="prose editor-preview" hidden></div>
         <div id="attached-images" class="attached-images" aria-label="첨부 이미지" hidden></div>
         <p id="image-status" class="editor-note" role="status" aria-live="polite"></p>
         <p id="mdx-note" class="editor-note" hidden>MDX 글의 컴포넌트는 배포된 화면에서 확인할 수 있습니다. 여기서는 Markdown 본문을 미리 봅니다.</p>
@@ -58,7 +60,7 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
           <button id="delete-post" class="danger" type="button" hidden>글 삭제</button>
         </div>
         <p id="save-status" role="status" aria-live="polite"></p>
-      </form>
+      </form></div>
     </div>
     <dialog id="editor-confirm" aria-labelledby="confirm-heading">
       <h2 id="confirm-heading">확인</h2>
@@ -69,45 +71,56 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
       </form>
     </dialog>
   </div>
-</StarlightPage>
+</BlogLayout>
 <script>
   import '../../scripts/admin-editor';
 </script>
 <style is:global>
   .admin-view [hidden] { display: none !important; }
-  .admin-view button, .admin-button { padding: .5rem .9rem; border: 1px solid var(--sl-color-gray-4); border-radius: .4rem; background: var(--sl-color-bg); color: var(--sl-color-white); cursor: pointer; font: inherit; font-size: .875rem; text-decoration: none; }
-  .admin-view button:hover, .admin-button:hover { border-color: var(--sl-color-accent); }
+  .admin-view button, .admin-button { padding: .5rem .9rem; border: 1px solid var(--border); border-radius: .4rem; background: var(--bg); color: var(--text); cursor: pointer; font: inherit; font-size: .875rem; text-decoration: none; }
+  .admin-view button:hover, .admin-button:hover { border-color: var(--link); }
   .admin-view button:disabled { opacity: .55; cursor: wait; }
-  .admin-view .primary, .admin-button { background: var(--sl-color-text-accent); color: var(--sl-color-bg); border-color: transparent; }
-  .admin-view .danger { color: var(--sl-color-red-high); }
+  .admin-view .primary, .admin-button { background: var(--text); color: var(--bg); border-color: transparent; }
+  .admin-view .danger { color: var(--danger); }
   .admin-toolbar, .editor-heading, .editor-actions, .editor-tabs { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; margin: 1rem 0; }
   .editor-heading { justify-content: space-between; }
-  .admin-posts { margin: 1.5rem 0 2rem; border-top: 1px solid var(--sl-color-hairline); }
-  .admin-post-row { display: flex; align-items: center; gap: 1rem; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid var(--sl-color-hairline); }
+  .admin-posts { margin: 1.5rem 0 2rem; border-top: 1px solid var(--border); }
+  .admin-post-row { display: flex; align-items: center; gap: 1rem; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid var(--border); }
   .admin-post-row strong { display: block; font-size: 1rem; }
-  .admin-post-row small { color: var(--sl-color-gray-2); }
+  .admin-post-row small { color: var(--muted); }
   .admin-post-actions { display: flex; align-items: center; gap: .75rem; flex: none; font-size: .875rem; }
   .admin-view label { display: block; margin: 1rem 0; font-size: .875rem; font-weight: 600; }
-  .admin-view input:not([type=checkbox]), .admin-view select, .admin-view textarea { display: block; width: 100%; margin-top: .4rem; padding: .65rem .75rem; border: 1px solid var(--sl-color-gray-4); border-radius: .4rem; background: var(--sl-color-bg); color: var(--sl-color-white); font: inherit; font-weight: normal; }
+  .admin-view input:not([type=checkbox]), .admin-view select, .admin-view textarea { display: block; width: 100%; margin-top: .4rem; padding: .65rem .75rem; border: 1px solid var(--border); border-radius: .4rem; background: var(--bg); color: var(--text); font: inherit; font-weight: normal; }
   .admin-view input:disabled, .admin-view select:disabled { opacity: .7; }
   .admin-view textarea { resize: vertical; }
-  .admin-view :focus-visible { outline: 2px solid var(--sl-color-text-accent); outline-offset: 3px; }
+  .admin-view :focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
   .editor-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1rem; }
   .editor-options { display: flex; flex-wrap: wrap; gap: 1.5rem; }
   .editor-options label { display: flex; gap: .5rem; align-items: center; }
-  .admin-view .editor-note { color: var(--sl-color-gray-2); font-size: .8rem; line-height: 1.6; }
+  .admin-view .editor-note { color: var(--muted); font-size: .8rem; line-height: 1.6; }
   .admin-view .body-label { font-size: 0; }
   .admin-view #post-body { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .9rem; line-height: 1.7; }
-  .editor-tabs [aria-pressed=true] { border-color: var(--sl-color-text-accent); color: var(--sl-color-text-accent); }
-  .editor-preview { padding: 1.5rem; border: 1px solid var(--sl-color-gray-4); border-radius: .4rem; min-height: 22rem; }
+  .editor-tabs [aria-pressed=true] { border-color: var(--text); color: var(--text); }
+  .editor-preview { padding: 1.5rem; border: 1px solid var(--border); border-radius: .4rem; min-height: 22rem; }
   .writing-tools { display: flex; flex-wrap: wrap; gap: .5rem; }
   .writing-tools button { padding: .35rem .6rem; }
   .attached-images { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
   .attached-images figure { margin: 0; max-width: 10rem; }
-  .attached-images img { display: block; max-width: 10rem; height: 7rem; object-fit: contain; border: 1px solid var(--sl-color-gray-4); border-radius: .4rem; }
-  .attached-images figcaption { font-size: .75rem; overflow-wrap: anywhere; color: var(--sl-color-gray-2); }
+  .attached-images img { display: block; max-width: 10rem; height: 7rem; object-fit: contain; border: 1px solid var(--border); border-radius: .4rem; }
+  .attached-images figcaption { font-size: .75rem; overflow-wrap: anywhere; color: var(--muted); }
   .editor-preview img { max-width: 100%; height: auto; }
-  .admin-view dialog { max-width: 30rem; width: calc(100% - 2rem); padding: 1.5rem; border: 1px solid var(--sl-color-gray-4); border-radius: .6rem; background: var(--sl-color-bg); color: var(--sl-color-white); }
+  .workspace-layout { display: grid; grid-template-columns: 17rem minmax(0, 1fr); gap: 3rem; align-items: start; }
+  .workspace-layout:has(#post-editor[hidden]) { grid-template-columns: 1fr; }
+  .workspace-layout:has(#post-editor[hidden]) .admin-posts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; border: 0; }
+  .admin-posts { margin-top: 0; }
+  .admin-post-row { align-items: start; flex-direction: column; gap: 1rem; padding: 1.25rem; border: 1px solid var(--border); border-radius: .6rem; margin-bottom: .75rem; }
+  .editor-heading { margin-top: 0; }
+  #post-editor { padding-left: 2rem; border-left: 1px solid var(--border); }
+  .admin-view .admin-toolbar { margin: 0 0 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+  #admin-account { margin-right: auto; }
+  @media (max-width: 60rem) { .workspace-layout { grid-template-columns: 1fr; } #post-editor { border: 0; padding: 0; } }
+  @media (max-width: 35rem) { .workspace-layout:has(#post-editor[hidden]) .admin-posts { grid-template-columns: 1fr; } }
+  .admin-view dialog { max-width: 30rem; width: calc(100% - 2rem); padding: 1.5rem; border: 1px solid var(--border); border-radius: .6rem; background: var(--bg); color: var(--text); }
   .admin-view dialog::backdrop { background: #0008; }
   .admin-view dialog h2 { margin-top: 0; }
   .admin-view dialog .editor-actions { justify-content: flex-end; margin-bottom: 0; }

@@ -1,0 +1,35 @@
+---
+import { sitePath } from '../utils/paths';
+---
+<dialog id="search-dialog" class="search-dialog" aria-labelledby="search-title" data-pagefind-ignore data-index={sitePath('pagefind/pagefind.js')}>
+  <div class="search-heading"><h2 id="search-title">기록에서 찾기</h2><button id="close-search" type="button" aria-label="검색 닫기">닫기 <kbd>Esc</kbd></button></div>
+  <label class="search-label">검색어<input id="search-query" type="search" placeholder="궁금한 키워드를 입력하세요" autocomplete="off" /></label>
+  <p id="search-status" role="status">제목과 본문에서 검색합니다.</p><div id="search-results"></div>
+</dialog>
+<script>
+  import DOMPurify from 'dompurify';
+  const dialog = document.getElementById('search-dialog') as HTMLDialogElement;
+  const query = document.getElementById('search-query') as HTMLInputElement;
+  const status = document.getElementById('search-status')!;
+  const results = document.getElementById('search-results')!;
+  type SearchResult = { data(): Promise<{ url: string; meta: { title?: string }; excerpt: string }> };
+  let index: Promise<{ search(query: string): Promise<{ results: SearchResult[] }> }> | undefined;
+  let generation = 0;
+  let timeout: ReturnType<typeof setTimeout>;
+  function open() { if (!dialog.open) dialog.showModal(); query.focus(); }
+  document.getElementById('open-search')!.addEventListener('click', open);
+  document.getElementById('close-search')!.addEventListener('click', () => dialog.close());
+  document.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); open(); } });
+  query.addEventListener('input', () => { clearTimeout(timeout); const turn = ++generation; timeout = setTimeout(async () => {
+    results.replaceChildren(); if (!query.value.trim()) { status.textContent = '제목과 본문에서 검색합니다.'; return; }
+    status.textContent = '찾고 있습니다.';
+    try {
+      index ??= import(/* @vite-ignore */ dialog.dataset.index!);
+      const found = await (await index).search(query.value);
+      const entries = await Promise.all(found.results.slice(0, 10).map((result) => result.data()));
+      if (turn !== generation) return;
+      status.textContent = found.results.length ? `${found.results.length}개의 기록을 찾았습니다.` : '일치하는 기록이 없습니다.';
+      for (const entry of entries) { const link = document.createElement('a'); link.className = 'search-result'; link.href = entry.url; const heading = document.createElement('strong'); heading.textContent = entry.meta.title || '기록'; const excerpt = document.createElement('p'); excerpt.innerHTML = DOMPurify.sanitize(entry.excerpt, { ALLOWED_TAGS: ['mark'], ALLOWED_ATTR: [] }); link.append(heading, excerpt); results.append(link); }
+    } catch { if (turn === generation) status.textContent = '검색을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'; }
+  }, 180); });
+</script>
