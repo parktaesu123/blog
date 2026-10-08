@@ -19,8 +19,8 @@ export default defineConfig({
     components: {
       PageTitle: './src/components/PageTitle.astro',
       Footer: './src/components/Footer.astro',
+      Header: './src/components/Header.astro',
     },
-    editLink: { baseUrl: `https://github.com/${blog.repository}/edit/main/` },
     customCss: ['./src/styles/custom.css'],
     sidebar: [
       { label: '홈', link: '/' },

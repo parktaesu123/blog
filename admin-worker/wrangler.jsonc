@@ -1,0 +1,8 @@
+{
+  "name": "taisu-blog-admin",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-07",
+  "workers_dev": false,
+  "routes": [{ "pattern": "blog-admin.taisu.site", "custom_domain": true }],
+  "observability": { "enabled": false }
+}

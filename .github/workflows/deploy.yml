@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: '24'
           package-manager: bun@1.3.2
-          build-cmd: bun run check && bun run build
+          build-cmd: bun run check && bun run test:admin && bun run build
         env:
           PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
           PUBLIC_BASE_PATH: ${{ vars.PUBLIC_BASE_PATH }}

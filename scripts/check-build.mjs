@@ -2,6 +2,7 @@ import { readdir, readFile, access } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { resolveSite } from './site-config.mjs';
 import { blog } from '../blog.config.mjs';
+import { load } from 'js-yaml';
 
 const output = resolve('dist');
 const { base } = resolveSite();
@@ -29,18 +30,43 @@ async function walk(directory) {
   }
 }
 await walk(output);
-for (const draft of ['development/draft-example', 'til/array-map', 'life/keeping-notes']) {
-  if (await exists(join(output, draft, 'index.html'))) errors.push(`Draft was included in the production build: ${draft}`);
+const publishedTags = new Set();
+const draftTags = new Set();
+async function checkDocuments(directory, relative = '') {
+  for (const item of await readdir(directory, { withFileTypes: true })) {
+    const file = join(directory, item.name);
+    const name = relative + item.name;
+    if (item.isDirectory()) { await checkDocuments(file, name + '/'); continue; }
+    if (!/\.mdx?$/.test(item.name)) continue;
+    const source = await readFile(file, 'utf8');
+    const frontmatter = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    const data = frontmatter ? load(frontmatter[1]) : {};
+    const slug = String(data.slug || name.replace(/\.mdx?$/, '').replace(/(^|\/)index$/, '$1')).replace(/^\/+|\/+$/g, '');
+    const target = join(output, slug, 'index.html');
+    if (data.draft) {
+      if (await exists(target)) errors.push(`Draft was included in the production build: ${name}`);
+      for (const tag of data.tags || []) draftTags.add(tag);
+      continue;
+    }
+    if (!data.publishedAt) continue;
+    for (const tag of data.tags || []) publishedTags.add(tag);
+    if (!(await exists(target))) { errors.push(`Published article is missing: ${name}`); continue; }
+    const html = await readFile(target, 'utf8');
+    const expectComments = blog.comments.enabled && data.comments !== false;
+    if (html.includes('<giscus-comments') !== expectComments) errors.push(`Article comment setting is incorrect: ${name}`);
+    if (expectComments && (!html.includes(`data-repo-id="${blog.comments.repoId}"`) || !html.includes('data-reactions-enabled="1"'))) errors.push(`Article reaction configuration is missing: ${name}`);
+    if (!html.includes('data-article=')) errors.push(`Owner editing control is missing: ${name}`);
+  }
 }
-if (await exists(join(output, 'tags/초안/index.html'))) errors.push('Draft-only tag was included in the production build.');
+await checkDocuments(resolve('src/content/docs'));
+for (const tag of draftTags) {
+  if (!publishedTags.has(tag) && await exists(join(output, 'tags', tag, 'index.html'))) errors.push(`Draft-only tag was published: ${tag}`);
+}
 if (!(await exists(join(output, 'pagefind/pagefind.js')))) errors.push('Search index is missing.');
-const article = await readFile(join(output, 'development/first-post/index.html'), 'utf8');
-if (blog.comments.enabled && (!article.includes('<giscus-comments') || !article.includes(`data-repo-id="${blog.comments.repoId}"`) || !article.includes('data-reactions-enabled="1"'))) {
-  errors.push('Published article is missing its configured comments and reactions.');
-}
-for (const page of ['index.html', 'about/index.html', 'posts/index.html']) {
+for (const page of ['index.html', 'about/index.html', 'posts/index.html', 'admin/index.html']) {
   if ((await readFile(join(output, page), 'utf8')).includes('<giscus-comments')) errors.push(`Comments were included on a non-article page: ${page}`);
 }
-if (!article.includes(`https://github.com/${blog.repository}/edit/main/src/content/docs/development/first-post.md`)) errors.push('Article editing link is missing.');
+const admin = await readFile(join(output, 'admin/index.html'), 'utf8');
+if (admin.includes('data-pagefind-body')) errors.push('The admin editor was included in public search.');
 if (errors.length) { console.error(errors.join('\n')); process.exit(1); }
-console.log(`Checked ${pages} static pages: links, assets, base path, drafts, search, article comments, and GitHub editing.`);
+console.log(`Checked ${pages} static pages: links, assets, base path, drafts, search, article comments, owner editing controls, and admin search exclusion.`);

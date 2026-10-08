@@ -5,6 +5,11 @@ export const blog = {
   description: '개발하며 배운 것과 일상에서 발견한 것을 기록합니다.',
   author: '태수',
   repository: 'parktaesu123/blog',
+  admin: {
+    api: 'https://blog-admin.taisu.site',
+    owner: 'parktaesu123',
+    ownerId: 163130634,
+  },
   comments: {
     enabled: true,
     repoId: 'R_kgDOU_E-Rg',

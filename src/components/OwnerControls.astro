@@ -1,0 +1,37 @@
+---
+import { sitePath } from '../utils/paths';
+interface Props { article?: string; }
+const { article } = Astro.props;
+const managePath = sitePath('admin/');
+---
+<owner-controls data-article={article} data-manage={managePath} class="print:hidden">
+  {!article && <a data-login href={managePath}>로그인</a>}
+  <a data-owner hidden href={article ? `${managePath}?post=${encodeURIComponent(article)}` : managePath}>
+    {article ? '이 글 수정' : '글 관리'}
+  </a>
+</owner-controls>
+<script>
+  import { getSession, loginUrl } from '../utils/admin';
+  class OwnerControls extends HTMLElement {
+    async connectedCallback() {
+      const login = this.querySelector<HTMLAnchorElement>('[data-login]');
+      if (login) login.href = loginUrl();
+      try {
+        const session = await getSession();
+        if (session.authenticated) {
+          this.querySelector<HTMLElement>('[data-owner]')!.hidden = false;
+          if (login) login.hidden = true;
+        }
+      } catch {
+        // Keep the login link usable while the authentication service is unavailable.
+      }
+    }
+  }
+  if (!customElements.get('owner-controls')) customElements.define('owner-controls', OwnerControls);
+</script>
+<style>
+  owner-controls { flex: none; font-size: .85rem; white-space: nowrap; }
+  a { color: var(--sl-color-text-accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  [hidden] { display: none !important; }
+</style>
