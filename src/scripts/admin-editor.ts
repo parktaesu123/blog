@@ -7,6 +7,7 @@ import { sitePath } from '../utils/paths';
 interface Doc { path: string; sha: string; content: string; }
 interface ParsedDoc { meta: Record<string, unknown>; body: string; }
 interface Saved { ok: boolean; sha?: string; commitUrl?: string; }
+interface AttachedImage { file: File; name: string; path: string; preview: string; uploaded: boolean; }
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const status = element<HTMLParagraphElement>('admin-status');
 const form = element<HTMLFormElement>('post-editor');
@@ -21,6 +22,10 @@ const comments = element<HTMLInputElement>('post-comments');
 const body = element<HTMLTextAreaElement>('post-body');
 const saveStatus = element<HTMLParagraphElement>('save-status');
 const list = element<HTMLDivElement>('admin-posts');
+const imageFiles = element<HTMLInputElement>('image-files');
+const imageStatus = element<HTMLParagraphElement>('image-status');
+const attachments = new Map<string, AttachedImage>();
+const imageTypes: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
 let selected: Doc | undefined;
 let metadata: Record<string, unknown> = {};
 let dirty = false;
@@ -52,6 +57,9 @@ async function mayDiscard() { return !dirty || await confirmAction('저장하지
 function setBusy(value: boolean) {
   busy = value;
   for (const control of document.querySelectorAll<HTMLButtonElement>('.admin-view button')) control.disabled = value;
+  for (const control of form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select')) {
+    control.disabled = value || (Boolean(selected) && (control === category || control === slug));
+  }
 }
 function postPath() { return selected?.path ?? `${category.value}/${slug.value}.md`; }
 function updateAddress() {
@@ -60,13 +68,76 @@ function updateAddress() {
 }
 function tab(preview: boolean) {
   element('body-label').hidden = preview;
+  element('writing-tools').hidden = preview;
   element('post-preview').hidden = !preview;
   element('show-writing').setAttribute('aria-pressed', String(!preview));
   element('show-preview').setAttribute('aria-pressed', String(preview));
-  if (preview) element('post-preview').innerHTML = DOMPurify.sanitize(marked.parse(body.value, { async: false }));
+  if (preview) {
+    const target = element('post-preview');
+    target.innerHTML = DOMPurify.sanitize(marked.parse(body.value, { async: false }));
+    for (const image of target.querySelectorAll('img')) {
+      const attachment = attachments.get(image.getAttribute('src') || '');
+      if (attachment) image.src = attachment.preview;
+    }
+  }
+}
+function clearAttachments() {
+  for (const image of attachments.values()) URL.revokeObjectURL(image.preview);
+  attachments.clear(); imageFiles.value = ''; imageStatus.textContent = '';
+  element('attached-images').replaceChildren(); element('attached-images').hidden = true;
+}
+function showAttachments() {
+  const target = element('attached-images'); target.replaceChildren();
+  for (const image of attachments.values()) {
+    if (!body.value.includes(image.path)) continue;
+    const figure = document.createElement('figure');
+    const thumbnail = document.createElement('img'); thumbnail.src = image.preview; thumbnail.alt = image.file.name || '붙여넣은 이미지';
+    const caption = document.createElement('figcaption'); caption.textContent = `${thumbnail.alt} · ${image.uploaded ? '저장됨' : '글 저장 시 함께 저장'}`;
+    figure.append(thumbnail, caption); target.append(figure);
+  }
+  target.hidden = !target.childElementCount;
+}
+function insertMarkdown(text: string) {
+  body.setRangeText(text, body.selectionStart, body.selectionEnd, 'end');
+  dirty = true; body.dispatchEvent(new Event('input', { bubbles: true })); body.focus();
+}
+function attachImages(files: File[]) {
+  if (busy) return;
+  const errors: string[] = [];
+  for (const file of files) {
+    const extension = imageTypes[file.type];
+    if (!extension) { errors.push('PNG·JPG·GIF·WebP 이미지를 첨부해 주세요.'); continue; }
+    if (!file.size || file.size > 5 * 1024 * 1024) { errors.push('이미지는 5MB 이하로 첨부해 주세요.'); continue; }
+    const name = `${crypto.randomUUID()}.${extension}`;
+    const path = sitePath(`uploads/${name}`);
+    attachments.set(path, { file, name, path, preview: URL.createObjectURL(file), uploaded: false });
+    const alt = (file.name || '이미지').replace(/\.[^.]+$/, '').replace(/[\[\]\\\r\n]/g, ' ');
+    insertMarkdown(`\n\n![${alt}](${path})\n\n`);
+  }
+  showAttachments();
+  imageStatus.textContent = errors.length ? [...new Set(errors)].join(' ') : '이미지를 추가했습니다. 글을 저장하면 이미지도 함께 저장됩니다.';
+}
+function imageBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1]);
+    reader.onerror = () => reject(new Error('이미지 파일을 읽지 못했습니다.'));
+    reader.readAsDataURL(file);
+  });
+}
+async function uploadImages(content: string) {
+  const images = [...attachments.values()].filter((image) => content.includes(image.path) && !image.uploaded);
+  for (const [index, image] of images.entries()) {
+    saveStatus.textContent = `이미지를 저장하고 있습니다. (${index + 1}/${images.length})`;
+    const result = await adminRequest<{ url: string }>('/image', { method: 'POST', body: JSON.stringify({ name: image.name, content: await imageBase64(image.file) }) });
+    if (sitePath(result.url) !== image.path) throw new Error('이미지 저장 주소를 확인하지 못했습니다.');
+    image.uploaded = true;
+  }
+  showAttachments();
 }
 async function openEditor(doc?: Doc) {
   if (busy || !(await mayDiscard())) return;
+  clearAttachments();
   selected = doc;
   const parsed = doc ? parse(doc.content) : { meta: {}, body: '' };
   metadata = parsed.meta;
@@ -138,6 +209,25 @@ async function loadList() {
 }
 form.addEventListener('input', () => { dirty = true; updateAddress(); });
 form.addEventListener('change', () => { dirty = true; updateAddress(); });
+body.addEventListener('input', showAttachments);
+body.addEventListener('paste', (event) => {
+  const files = Array.from(event.clipboardData?.items || []).filter((item) => item.kind === 'file').map((item) => item.getAsFile()).filter((file): file is File => Boolean(file));
+  if (!files.length) return;
+  event.preventDefault(); attachImages(files);
+});
+body.addEventListener('dragover', (event) => { if (event.dataTransfer?.types.includes('Files')) event.preventDefault(); });
+body.addEventListener('drop', (event) => {
+  const files = Array.from(event.dataTransfer?.files || []);
+  if (!files.length) return;
+  event.preventDefault(); attachImages(files);
+});
+element('attach-image').addEventListener('click', () => imageFiles.click());
+imageFiles.addEventListener('change', () => { attachImages(Array.from(imageFiles.files || [])); imageFiles.value = ''; });
+for (const button of document.querySelectorAll<HTMLButtonElement>('[data-markdown]')) button.addEventListener('click', () => {
+  const selection = body.value.slice(body.selectionStart, body.selectionEnd);
+  const snippets: Record<string, string> = { heading: `\n## ${selection || '제목'}\n`, bold: `**${selection || '굵은 글씨'}**`, link: `[${selection || '링크 제목'}](https://)`, code: `\n\n\`\`\`\n${selection || '코드를 입력하세요.'}\n\`\`\`\n\n` };
+  insertMarkdown(snippets[button.dataset.markdown!]);
+});
 element('show-writing').addEventListener('click', () => tab(false));
 element('show-preview').addEventListener('click', () => tab(true));
 element('new-post').addEventListener('click', () => { openEditor().catch((error) => { status.textContent = message(error); }); });
@@ -153,6 +243,8 @@ form.addEventListener('submit', async (event) => {
   const content = serialized();
   setBusy(true); saveStatus.textContent = '저장하고 있습니다.';
   try {
+    await uploadImages(content);
+    saveStatus.textContent = '글을 저장하고 있습니다.';
     const result = await adminRequest<Saved>('/post', { method: 'PUT', body: JSON.stringify({ path, content, sha: selected?.sha }) });
     selected = { path, content, sha: result.sha! };
     metadata = parse(content).meta;
@@ -174,6 +266,7 @@ element('delete-post').addEventListener('click', async () => {
   try {
     await adminRequest('/post', { method: 'DELETE', body: JSON.stringify({ path: selected.path, sha: selected.sha }) });
     dirty = false; selected = undefined; form.hidden = true;
+    clearAttachments();
     status.textContent = '글을 삭제했습니다. 배포가 끝나면 블로그에서도 내려갑니다.';
     await loadList();
   } catch (error) { saveStatus.textContent = message(error); }

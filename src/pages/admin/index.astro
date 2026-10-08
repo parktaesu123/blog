@@ -39,8 +39,19 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
           <button id="show-writing" type="button" aria-pressed="true">본문 작성</button>
           <button id="show-preview" type="button" aria-pressed="false">미리보기</button>
         </div>
-        <label id="body-label" class="body-label">본문<textarea id="post-body" name="body" rows="18" placeholder="오늘 배운 내용을 남겨 보세요."></textarea></label>
+        <div id="writing-tools" class="writing-tools" role="toolbar" aria-label="Markdown 도구">
+          <button type="button" data-markdown="heading">제목</button>
+          <button type="button" data-markdown="bold">굵게</button>
+          <button type="button" data-markdown="link">링크</button>
+          <button type="button" data-markdown="code">코드 블록</button>
+          <button id="attach-image" type="button">이미지 첨부</button>
+          <input id="image-files" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden />
+        </div>
+        <p class="editor-note">Markdown으로 작성하세요. # 제목, **굵게**, 목록, 코드 블록을 미리보기에서 확인할 수 있습니다. 이미지는 본문에 붙여넣거나 끌어놓으세요. PNG·JPG·GIF·WebP, 파일당 최대 5MB.</p>
+        <label id="body-label" class="body-label">본문<textarea id="post-body" name="body" rows="18" placeholder="## 오늘 배운 것&#10;&#10;Markdown으로 작성하고 이미지를 붙여넣어 보세요."></textarea></label>
         <div id="post-preview" class="sl-markdown-content editor-preview" hidden></div>
+        <div id="attached-images" class="attached-images" aria-label="첨부 이미지" hidden></div>
+        <p id="image-status" class="editor-note" role="status" aria-live="polite"></p>
         <p id="mdx-note" class="editor-note" hidden>MDX 글의 컴포넌트는 배포된 화면에서 확인할 수 있습니다. 여기서는 Markdown 본문을 미리 봅니다.</p>
         <div class="editor-actions">
           <button id="save-post" class="primary" type="submit">초안 저장</button>
@@ -89,6 +100,13 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
   .admin-view #post-body { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .9rem; line-height: 1.7; }
   .editor-tabs [aria-pressed=true] { border-color: var(--sl-color-text-accent); color: var(--sl-color-text-accent); }
   .editor-preview { padding: 1.5rem; border: 1px solid var(--sl-color-gray-4); border-radius: .4rem; min-height: 22rem; }
+  .writing-tools { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .writing-tools button { padding: .35rem .6rem; }
+  .attached-images { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+  .attached-images figure { margin: 0; max-width: 10rem; }
+  .attached-images img { display: block; max-width: 10rem; height: 7rem; object-fit: contain; border: 1px solid var(--sl-color-gray-4); border-radius: .4rem; }
+  .attached-images figcaption { font-size: .75rem; overflow-wrap: anywhere; color: var(--sl-color-gray-2); }
+  .editor-preview img { max-width: 100%; height: auto; }
   .admin-view dialog { max-width: 30rem; width: calc(100% - 2rem); padding: 1.5rem; border: 1px solid var(--sl-color-gray-4); border-radius: .6rem; background: var(--sl-color-bg); color: var(--sl-color-white); }
   .admin-view dialog::backdrop { background: #0008; }
   .admin-view dialog h2 { margin-top: 0; }

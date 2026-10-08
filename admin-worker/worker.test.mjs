@@ -27,7 +27,7 @@ async function seal(value, secret) {
 function request(path, headers = {}, options = {}) { return new Request(origin + path, { ...options, headers: { Origin: site, ...headers } }); }
 
 test('Unauthenticated visitors cannot list or change posts', async () => {
-  for (const [path, method] of [['/posts','GET'], ['/post','PUT'], ['/post','DELETE']]) {
+  for (const [path, method] of [['/posts','GET'], ['/post','PUT'], ['/post','DELETE'], ['/image','POST']]) {
     const result = await worker.fetch(request(path, {}, { method }), env);
     assert.equal(result.status, 401);
   }
@@ -57,6 +57,45 @@ test('Foreign origins and writes without a matching CSRF token are blocked', asy
   assert.equal((await worker.fetch(request('/session', { Origin: 'https://attacker.example' }), env)).status, 403);
   assert.equal((await worker.fetch(request('/post', { Cookie: cookie }, { method: 'PUT', body: '{}' }), env)).status, 403);
   assert.equal((await worker.fetch(request('/post', { Cookie: cookie, 'X-CSRF-Token': 'wrong' }, { method: 'PUT', body: '{}' }), env)).status, 403);
+  assert.equal((await worker.fetch(request('/image', { Cookie: cookie }, { method: 'POST', body: '{}' }), env)).status, 403);
+});
+
+const imageName = '12345678-1234-4123-8123-123456789abc.png';
+const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aP9sAAAAASUVORK5CYII=';
+test('Images are created only inside public/uploads on blog/main with original bytes', async () => {
+  handler = (url, options) => {
+    if (url.endsWith('/user')) return response({ id: 163130634 });
+    assert.equal(url, `https://api.github.com/repos/parktaesu123/blog/contents/public/uploads/${imageName}`);
+    assert.equal(options.method, 'PUT');
+    const data = JSON.parse(options.body);
+    assert.equal(data.branch, 'main'); assert.equal(data.content, png); assert.equal(data.sha, undefined);
+    return response({ commit: { sha: 'c'.repeat(40) } });
+  };
+  const result = await worker.fetch(request('/image', { Cookie: await sessionCookie(), 'X-CSRF-Token': 'test-csrf' }, { method: 'POST', body: JSON.stringify({ name: imageName, content: png }) }), env);
+  assert.equal(result.status, 201);
+  assert.equal((await result.json()).url, `/uploads/${imageName}`);
+});
+test('Image uploads reject traversal, SVG, fake image data and mismatched extensions', async () => {
+  handler = (url) => { assert.ok(url.endsWith('/user')); return response({ id: 163130634 }); };
+  const headers = { Cookie: await sessionCookie(), 'X-CSRF-Token': 'test-csrf' };
+  for (const data of [
+    { name: '../README.md', content: png },
+    { name: imageName.replace('.png', '.svg'), content: Buffer.from('<svg/>').toString('base64') },
+    { name: imageName, content: Buffer.from('<script>alert(1)</script>').toString('base64') },
+    { name: imageName.replace('.png', '.jpg'), content: png },
+    { name: imageName, content: 'not base64!' },
+  ]) assert.equal((await worker.fetch(request('/image', headers, { method: 'POST', body: JSON.stringify(data) }), env)).status, 400);
+});
+test('Oversized images are rejected before sending content to GitHub', async () => {
+  handler = (url) => { assert.ok(url.endsWith('/user')); return response({ id: 163130634 }); };
+  const content = Buffer.alloc(5 * 1024 * 1024 + 1).toString('base64');
+  const result = await worker.fetch(request('/image', { Cookie: await sessionCookie(), 'X-CSRF-Token': 'test-csrf' }, { method: 'POST', body: JSON.stringify({ name: imageName, content }) }), env);
+  assert.equal(result.status, 413);
+});
+test('An image name collision cannot overwrite an existing upload', async () => {
+  handler = (url) => url.endsWith('/user') ? response({ id: 163130634 }) : response({ message: 'Already exists' }, 422);
+  const result = await worker.fetch(request('/image', { Cookie: await sessionCookie(), 'X-CSRF-Token': 'test-csrf' }, { method: 'POST', body: JSON.stringify({ name: imageName, content: png }) }), env);
+  assert.equal(result.status, 409);
 });
 test('Paths cannot escape the three article directories', async () => {
   const headers = { Cookie: await sessionCookie() };

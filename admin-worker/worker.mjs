@@ -5,6 +5,7 @@ const ROOT = 'src/content/docs/';
 const SESSION_COOKIE = '__Host-taisu-session';
 const OAUTH_COOKIE = '__Host-taisu-oauth';
 const MAX_CONTENT = 256 * 1024;
+const MAX_IMAGE = 5 * 1024 * 1024;
 const encoder = new TextEncoder();
 
 class ApiError extends Error {
@@ -62,6 +63,24 @@ function documentPath(value) {
   return ROOT + value;
 }
 function apiPath(value) { return value.split('/').map(encodeURIComponent).join('/'); }
+function imagePath(name) {
+  if (typeof name !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.(png|jpg|gif|webp)$/i.test(name)) throw new ApiError(400, '올바른 이미지 이름이 아닙니다.');
+  return `public/uploads/${name}`;
+}
+function validateImage(content, name) {
+  if (typeof content !== 'string' || !content || content.length % 4 || !/^[A-Za-z0-9+/]+={0,2}$/.test(content)) throw new ApiError(400, '이미지 파일을 읽지 못했습니다.');
+  const size = content.length / 4 * 3 - (content.endsWith('==') ? 2 : content.endsWith('=') ? 1 : 0);
+  if (size > MAX_IMAGE) throw new ApiError(413, '이미지는 5MB 이하로 첨부해 주세요.');
+  // Inspect the file signature without decoding a multi-megabyte image into memory.
+  const bytes = base64ToBytes(content.slice(0, 32));
+  const starts = (...values) => values.every((value, i) => bytes[i] === value);
+  const text = (start, end) => String.fromCharCode(...bytes.slice(start, end));
+  const extension = starts(137, 80, 78, 71, 13, 10, 26, 10) ? 'png'
+    : starts(255, 216, 255) ? 'jpg'
+    : ['GIF87a', 'GIF89a'].includes(text(0, 6)) ? 'gif'
+    : text(0, 4) === 'RIFF' && text(8, 12) === 'WEBP' ? 'webp' : null;
+  if (!extension || !name.toLowerCase().endsWith(`.${extension}`)) throw new ApiError(400, 'PNG·JPG·GIF·WebP 이미지 파일만 첨부할 수 있습니다.');
+}
 async function github(path, token, options = {}) {
   const response = await fetch(`https://api.github.com${path}`, {
     ...options,
@@ -84,10 +103,10 @@ async function readSession(request, env) {
   if (!session || session.id !== OWNER_ID || typeof session.token !== 'string' || typeof session.csrf !== 'string') return null;
   return session;
 }
-async function body(request) {
-  if (Number(request.headers.get('Content-Length')) > MAX_CONTENT * 2) throw new ApiError(413, '글이 너무 큽니다.');
+async function body(request, limit = MAX_CONTENT * 2) {
+  if (Number(request.headers.get('Content-Length')) > limit) throw new ApiError(413, '파일이 너무 큽니다.');
   const text = await request.text();
-  if (encoder.encode(text).length > MAX_CONTENT * 2) throw new ApiError(413, '글이 너무 큽니다.');
+  if (encoder.encode(text).length > limit) throw new ApiError(413, '파일이 너무 큽니다.');
   try { return JSON.parse(text); } catch { throw new ApiError(400, '요청 형식이 올바르지 않습니다.'); }
 }
 async function route(request, env) {
@@ -152,6 +171,15 @@ async function route(request, env) {
     if (user.id !== OWNER_ID) throw new ApiError(403, '작성자 계정만 글을 관리할 수 있습니다.');
   }
   if (url.pathname === '/auth/logout' && request.method === 'POST') return json({ ok: true }, 200, { 'Set-Cookie': cookie(SESSION_COOKIE, '', 0) });
+  if (url.pathname === '/image' && request.method === 'POST') {
+    const data = await body(request, Math.ceil(MAX_IMAGE / 3) * 4 + 1024);
+    const path = imagePath(data.name);
+    validateImage(data.content, data.name);
+    const result = await github(`/repos/${REPO}/contents/${apiPath(path)}`, session.token, {
+      method: 'PUT', body: JSON.stringify({ branch: 'main', message: `Add ${data.name} from blog editor`, content: data.content }),
+    });
+    return json({ ok: true, url: `/uploads/${data.name}`, commit: result.commit?.sha }, 201);
+  }
   if (url.pathname === '/posts' && request.method === 'GET') {
     const tree = await github(`/repos/${REPO}/git/trees/main?recursive=1`, session.token);
     if (tree.truncated) throw new ApiError(502, '글 목록이 너무 큽니다. 저장소 설정을 확인해 주세요.');
