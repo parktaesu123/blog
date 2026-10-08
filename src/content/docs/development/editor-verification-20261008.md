@@ -7,8 +7,12 @@ comments: true
 draft: true
 sidebar:
   hidden: true
+updatedAt: 2026-10-08T02:27:59.792Z
 ---
 
 ## 편집 기능 확인
 
-GitHub 계정으로 로그인한 작성자가 사이트에서 저장하는 임시 초안입니다.
+작성과 수정을 실제 GitHub 저장소에서 확인했습니다. 이 임시 초안은 확인 후 삭제합니다.
+
+- 한글 본문 저장
+- Markdown 미리보기
