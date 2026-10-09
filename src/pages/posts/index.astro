@@ -1,18 +1,15 @@
 ---
-import BlogLayout from '../../layouts/BlogLayout.astro';
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import PostList from '../../components/PostList.astro';
 import { getPosts, tagsOf } from '../../utils/posts';
 import { tagPath } from '../../utils/paths';
 const posts = await getPosts();
 const tags = tagsOf(posts);
 ---
-<BlogLayout title="모든 글">
-  <header class="page-heading"><p class="eyebrow">JOURNAL</p><h1>쌓이는 기록<span class="quiet-count">{String(posts.length).padStart(2, '0')}</span></h1><p>만들면서 배운 것, 오래 기억하고 싶은 것.</p></header>
-  <div class="archive-filters" aria-label="카테고리"><button data-filter="all" aria-pressed="true">전체</button><button data-filter="development" aria-pressed="false">개발</button><button data-filter="til" aria-pressed="false">TIL</button><button data-filter="life" aria-pressed="false">일상·회고</button></div>
+<StarlightPage frontmatter={{ title: '모든 글', description: '개발과 일상의 기록을 발행일 순으로 모았습니다.', tableOfContents: false }}>
+  <p>{posts.length}개의 글</p>
   <ul class="post-tags" aria-label="태그별 글 보기">
     {tags.map((tag) => <li><a href={tagPath(tag)}>{tag}</a></li>)}
   </ul>
   <PostList posts={posts} />
-  <p id="archive-empty" class="archive-empty" hidden>이 분류에는 아직 발행된 기록이 없습니다.</p>
-</BlogLayout>
-<script>for (const button of document.querySelectorAll<HTMLButtonElement>('[data-filter]')) button.addEventListener('click', () => { for (const filter of document.querySelectorAll('[data-filter]')) filter.setAttribute('aria-pressed', String(filter === button)); let shown = 0; for (const post of document.querySelectorAll<HTMLElement>('[data-category]')) { post.hidden = button.dataset.filter !== 'all' && post.dataset.category !== button.dataset.filter; if (!post.hidden) shown++; } document.getElementById('archive-empty')!.hidden = shown > 0; });</script>
+</StarlightPage>

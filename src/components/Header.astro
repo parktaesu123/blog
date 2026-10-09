@@ -1,15 +1,13 @@
 ---
+import StarlightHeader from '@astrojs/starlight/components/Header.astro';
 import OwnerControls from './OwnerControls.astro';
-import { design } from '../utils/design';
-import { blog } from '../../blog.config.mjs';
-import { sitePath } from '../utils/paths';
 ---
-<header class="site-header">
-  <a class="wordmark" href={sitePath()} aria-label={`${blog.title} 홈`}>{design.brand}</a>
-  <nav aria-label="메인 메뉴">
-    <a href={sitePath('posts/')} aria-current={Astro.url.pathname.includes('/posts/') ? 'page' : undefined}>글</a>
-    <a href={sitePath('about/')} aria-current={Astro.url.pathname.includes('/about/') ? 'page' : undefined}>소개</a>
-    <button id="open-search" type="button" aria-label="글 검색">검색 <span class="keyboard-hint">⌘ K</span></button>
-  </nav>
-  <div class="header-actions"><button id="theme-toggle" type="button" aria-label="어두운 테마로 전환">◐</button><OwnerControls /></div>
-</header>
+<div class="blog-header">
+  <div class="default-header"><StarlightHeader /></div>
+  <OwnerControls />
+</div>
+<style>
+  .blog-header { display: flex; align-items: center; gap: 1rem; height: 100%; }
+  .default-header { flex: 1; min-width: 0; }
+  @media (max-width: 49.99rem) { .blog-header { gap: .5rem; } }
+</style>
