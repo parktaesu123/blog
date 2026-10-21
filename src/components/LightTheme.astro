@@ -1,0 +1,9 @@
+---
+import { sitePath } from '../utils/paths';
+---
+<meta name="color-scheme" content="light" />
+<link rel="preload" href={sitePath('fonts/PretendardVariable.woff2')} as="font" type="font/woff2" crossorigin />
+<script is:inline>
+  document.documentElement.dataset.theme = 'light';
+  window.StarlightThemeProvider = { updatePickers() {} };
+</script>
