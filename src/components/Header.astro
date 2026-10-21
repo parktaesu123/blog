@@ -1,14 +1,18 @@
 ---
-import SiteTitle from '@astrojs/starlight/components/SiteTitle.astro';
 import Search from '@astrojs/starlight/components/Search.astro';
 import OwnerControls from './OwnerControls.astro';
+import { sitePath } from '../utils/paths';
+const { siteTitle, siteTitleHref } = Astro.locals.starlightRoute;
 ---
 <div class="blog-header">
-  <SiteTitle />
+  <a class="site-title brand" href={siteTitleHref} aria-label={`${siteTitle} 홈`}>
+    <img class="brand-mark" src={sitePath('favicon.svg')} alt="" width="34" height="34" />
+    <span class="brand-wordmark" translate="no">{siteTitle}</span>
+  </a>
   <div class="header-tools"><Search /><OwnerControls /></div>
 </div>
 <style>
   .blog-header { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; height: 100%; }
-  .header-tools { display: flex; align-items: center; gap: 1.5rem; }
+  .header-tools { display: flex; align-items: center; gap: 2rem; }
   @media (max-width: 49.99rem) { .blog-header, .header-tools { gap: 1rem; } }
 </style>
