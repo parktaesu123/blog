@@ -1,4 +1,5 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
+import { isHomePage } from './paths';
 
 export type Post = CollectionEntry<'docs'>;
 const categories: Record<string, string> = {
@@ -8,7 +9,7 @@ const categories: Record<string, string> = {
 export async function getPosts(): Promise<Post[]> {
   const entries = await getCollection('docs');
   return entries
-    .filter((entry) => !entry.data.draft && entry.data.publishedAt)
+    .filter((entry) => !isHomePage(entry.id) && !entry.data.draft && entry.data.publishedAt)
     .sort((a, b) => b.data.publishedAt!.getTime() - a.data.publishedAt!.getTime() || a.id.localeCompare(b.id));
 }
 

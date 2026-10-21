@@ -3,11 +3,15 @@ import StarlightFooter from '@astrojs/starlight/components/Footer.astro';
 import Comments from './Comments.astro';
 import { blog } from '../../blog.config.mjs';
 import OwnerControls from './OwnerControls.astro';
+import { isHomePage } from '../utils/paths';
 
 const { entry } = Astro.locals.starlightRoute;
-const showComments = blog.comments.enabled && entry.data.publishedAt && !entry.data.draft && entry.data.comments;
+const isHome = isHomePage(entry.id);
+// Route slugs can differ from source paths; the editor addresses source files.
+const article = entry.filePath?.split('src/content/docs/')[1]?.replace(/\.mdx?$/, '') ?? entry.id;
+const showComments = !isHome && blog.comments.enabled && entry.data.publishedAt && !entry.data.draft && entry.data.comments;
 ---
 
 <StarlightFooter />
-{entry.data.publishedAt && <OwnerControls article={entry.id} />}
+{entry.data.publishedAt && <OwnerControls article={article} label={isHome ? '소개글 수정' : undefined} />}
 {showComments && <Comments />}

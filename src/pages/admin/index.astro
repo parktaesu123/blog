@@ -23,18 +23,18 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
         </div>
         <label>제목<input id="post-title" name="title" required maxlength="200" /></label>
         <label>짧은 소개<textarea id="post-description" name="description" rows="2" maxlength="1000"></textarea></label>
-        <div class="editor-grid">
+        <div id="post-details" class="editor-grid">
           <label>카테고리<select id="post-category" name="category"><option value="development">개발</option><option value="til">TIL</option><option value="life">일상·회고</option></select></label>
           <label>글 주소<input id="post-slug" name="slug" required pattern="[a-z0-9][a-z0-9-]*" placeholder="my-first-note" /></label>
           <label>발행일<input id="post-date" name="date" type="date" required /></label>
           <label>태그<input id="post-tags" name="tags" placeholder="JavaScript, 기록" /></label>
         </div>
         <p id="post-address" class="editor-note"></p>
-        <div class="editor-options">
+        <div id="post-options" class="editor-options">
           <label><input id="post-draft" name="draft" type="checkbox" checked />초안으로 저장</label>
           <label><input id="post-comments" name="comments" type="checkbox" checked />댓글·좋아요 허용</label>
         </div>
-        <p class="editor-note">초안은 블로그에 표시되지 않습니다. 원본 파일은 공개 GitHub 저장소에 저장됩니다.</p>
+        <p id="draft-note" class="editor-note">초안은 블로그에 표시되지 않습니다. 원본 파일은 공개 GitHub 저장소에 저장됩니다.</p>
         <div class="editor-tabs">
           <button id="show-writing" type="button" aria-pressed="true">본문 작성</button>
           <button id="show-preview" type="button" aria-pressed="false">미리보기</button>

@@ -1,6 +1,10 @@
 ---
 title: 일신우일신
+slug: index
 description: 블로그를 시작한 이유
+tableOfContents: false
+sidebar:
+  hidden: true
 publishedAt: 2026-10-07T00:00:00.000Z
 tags:
   - 블로그

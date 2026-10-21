@@ -10,6 +10,7 @@ export default defineConfig({
   base,
   output: 'static',
   trailingSlash: 'always',
+  redirects: { '/development/first-post/': '/' },
   integrations: [starlight({
     title: blog.title,
     description: blog.description,

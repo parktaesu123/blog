@@ -5,3 +5,7 @@ export function sitePath(path = '') {
 export function tagPath(tag: string) {
   return sitePath(`tags/${encodeURIComponent(tag)}/`);
 }
+
+export function isHomePage(id: string) {
+  return id === '' || id === '/' || id === 'index';
+}

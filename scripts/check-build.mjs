@@ -41,7 +41,7 @@ async function checkDocuments(directory, relative = '') {
     const source = await readFile(file, 'utf8');
     const frontmatter = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
     const data = frontmatter ? load(frontmatter[1]) : {};
-    const slug = String(data.slug || name.replace(/\.mdx?$/, '').replace(/(^|\/)index$/, '$1')).replace(/^\/+|\/+$/g, '');
+    const slug = String(data.slug || name.replace(/\.mdx?$/, '')).replace(/^\/+|\/+$/g, '').replace(/(^|\/)index$/, '$1');
     const target = join(output, slug, 'index.html');
     if (data.draft) {
       if (await exists(target)) errors.push(`Draft was included in the production build: ${name}`);
@@ -49,13 +49,22 @@ async function checkDocuments(directory, relative = '') {
       continue;
     }
     if (!data.publishedAt) continue;
-    for (const tag of data.tags || []) publishedTags.add(tag);
+    const isHome = slug === '';
+    if (!isHome) for (const tag of data.tags || []) publishedTags.add(tag);
     if (!(await exists(target))) { errors.push(`Published article is missing: ${name}`); continue; }
     const html = await readFile(target, 'utf8');
-    const expectComments = blog.comments.enabled && data.comments !== false;
+    const expectComments = !isHome && blog.comments.enabled && data.comments !== false;
     if (html.includes('<giscus-comments') !== expectComments) errors.push(`Article comment setting is incorrect: ${name}`);
     if (expectComments && (!html.includes(`data-repo-id="${blog.comments.repoId}"`) || !html.includes('data-reactions-enabled="1"'))) errors.push(`Article reaction configuration is missing: ${name}`);
     if (!html.includes('data-article=')) errors.push(`Owner editing control is missing: ${name}`);
+    if (isHome) {
+      if (html.includes('class="article-meta"') || html.includes('aria-label="태그"')) errors.push('Home introduction includes article metadata.');
+      if (!data.sidebar?.hidden) errors.push('Home introduction must be hidden from category navigation.');
+      const sourceId = name.replace(/\.mdx?$/, '');
+      if (!html.includes(`data-article="${sourceId}"`)) errors.push('Home introduction editing points to the wrong source.');
+      const archive = await readFile(join(output, 'posts/index.html'), 'utf8');
+      if (archive.includes(`<h3><a href="${base}"`)) errors.push('Home introduction was included in the post archive.');
+    }
   }
 }
 await checkDocuments(resolve('src/content/docs'));

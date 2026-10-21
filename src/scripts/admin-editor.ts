@@ -2,7 +2,7 @@ import { load, dump } from 'js-yaml';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { getSession, adminRequest, loginUrl, logout } from '../utils/admin';
-import { sitePath } from '../utils/paths';
+import { isHomePage, sitePath } from '../utils/paths';
 
 interface Doc { path: string; sha: string; content: string; }
 interface ParsedDoc { meta: Record<string, unknown>; body: string; }
@@ -62,9 +62,13 @@ function setBusy(value: boolean) {
   }
 }
 function postPath() { return selected?.path ?? `${category.value}/${slug.value}.md`; }
+function isHomeIntroduction(meta = metadata) { return typeof meta.slug === 'string' && isHomePage(meta.slug); }
+function documentUrl(path: string, meta: Record<string, unknown>) {
+  return sitePath(isHomeIntroduction(meta) ? '' : `${String(meta.slug ?? path.replace(/\.mdx?$/, ''))}/`);
+}
 function updateAddress() {
-  element('post-address').textContent = selected || slug.value ? `주소: ${new URL(sitePath(postPath().replace(/\.mdx?$/, '/')), window.location.origin).href}` : '글 주소에 짧은 영문 이름을 입력해 주세요.';
-  element<HTMLButtonElement>('save-post').textContent = draft.checked ? '초안 저장' : selected ? '수정한 글 발행' : '글 발행';
+  element('post-address').textContent = selected || slug.value ? `주소: ${new URL(documentUrl(postPath(), metadata), window.location.origin).href}` : '글 주소에 짧은 영문 이름을 입력해 주세요.';
+  element<HTMLButtonElement>('save-post').textContent = isHomeIntroduction() ? '소개글 저장' : draft.checked ? '초안 저장' : selected ? '수정한 글 발행' : '글 발행';
 }
 function tab(preview: boolean) {
   element('body-label').hidden = preview;
@@ -155,8 +159,9 @@ async function openEditor(doc?: Doc) {
   body.value = parsed.body;
   dirty = false;
   saveStatus.textContent = '';
-  element('editor-heading').textContent = doc ? '글 수정' : '새 글 작성';
-  element('delete-post').hidden = !doc;
+  element('editor-heading').textContent = isHomeIntroduction() ? '홈 소개글 수정' : doc ? '글 수정' : '새 글 작성';
+  element('delete-post').hidden = !doc || isHomeIntroduction();
+  for (const id of ['post-details', 'post-options', 'draft-note']) element(id).hidden = isHomeIntroduction();
   element('mdx-note').hidden = !doc?.path.endsWith('.mdx');
   form.hidden = false;
   updateAddress();
@@ -166,6 +171,10 @@ async function openEditor(doc?: Doc) {
 }
 function serialized() {
   const meta: Record<string, unknown> = { ...metadata, title: title.value.trim(), description: description.value.trim() };
+  if (isHomeIntroduction()) {
+    meta.updatedAt = new Date();
+    return `---\n${dump(meta, { lineWidth: -1, noRefs: true, sortKeys: false })}---\n\n${body.value.trimEnd()}\n`;
+  }
   meta.publishedAt = metadata.publishedAt && date.value === koreaDate(metadata.publishedAt)
     ? metadata.publishedAt : `${date.value}T09:00:00+09:00`;
   meta.tags = [...new Set(tags.value.split(',').map((tag) => tag.trim()).filter(Boolean))];
@@ -195,14 +204,14 @@ async function loadList() {
     const row = document.createElement('article'); row.className = 'admin-post-row';
     const info = document.createElement('div');
     const heading = document.createElement('strong'); heading.textContent = String(parsed.meta.title || doc.path);
-    const detail = document.createElement('small'); detail.textContent = `${parsed.meta.draft ? '초안' : '발행됨'} · ${doc.path}`;
+    const detail = document.createElement('small'); detail.textContent = isHomeIntroduction(parsed.meta) ? '홈 소개글' : `${parsed.meta.draft ? '초안' : '발행됨'} · ${doc.path}`;
     info.append(heading, detail);
     const actions = document.createElement('div'); actions.className = 'admin-post-actions';
     const edit = document.createElement('button'); edit.type = 'button'; edit.textContent = '수정'; edit.addEventListener('click', async () => {
       try { await openEditor(doc); } catch (error) { status.textContent = message(error); }
     }); actions.append(edit);
     if (!parsed.meta.draft) {
-      const view = document.createElement('a'); view.textContent = '글 보기'; view.href = sitePath(doc.path.replace(/\.mdx?$/, '/')); actions.append(view);
+      const view = document.createElement('a'); view.textContent = isHomeIntroduction(parsed.meta) ? '홈 보기' : '글 보기'; view.href = documentUrl(doc.path, parsed.meta); actions.append(view);
     }
     row.append(info, actions); list.append(row);
   }
@@ -250,8 +259,8 @@ form.addEventListener('submit', async (event) => {
     metadata = parse(content).meta;
     dirty = false;
     category.disabled = slug.disabled = true;
-    element('delete-post').hidden = false;
-    element('editor-heading').textContent = '글 수정';
+    element('delete-post').hidden = isHomeIntroduction();
+    element('editor-heading').textContent = isHomeIntroduction() ? '홈 소개글 수정' : '글 수정';
     saveStatus.textContent = draft.checked ? '초안을 저장했습니다.' : '저장했습니다. 배포가 끝나면 블로그에 반영됩니다.';
     if (result.commitUrl) {
       const link = document.createElement('a'); link.textContent = ' 저장 내역 보기'; link.href = result.commitUrl; link.target = '_blank'; link.rel = 'noopener noreferrer'; saveStatus.append(link);
@@ -261,7 +270,7 @@ form.addEventListener('submit', async (event) => {
   finally { setBusy(false); }
 });
 element('delete-post').addEventListener('click', async () => {
-  if (!selected || busy || !(await confirmAction(`“${title.value}” 글을 삭제할까요? 블로그에서 내려가며 저장소의 변경 이력에는 남습니다.`, '글 삭제'))) return;
+  if (!selected || isHomeIntroduction() || busy || !(await confirmAction(`“${title.value}” 글을 삭제할까요? 블로그에서 내려가며 저장소의 변경 이력에는 남습니다.`, '글 삭제'))) return;
   setBusy(true); saveStatus.textContent = '삭제하고 있습니다.';
   try {
     await adminRequest('/post', { method: 'DELETE', body: JSON.stringify({ path: selected.path, sha: selected.sha }) });

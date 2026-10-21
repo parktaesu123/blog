@@ -1,13 +1,13 @@
 ---
 import { sitePath } from '../utils/paths';
-interface Props { article?: string; }
-const { article } = Astro.props;
+interface Props { article?: string; label?: string; }
+const { article, label } = Astro.props;
 const managePath = sitePath('admin/');
 ---
 <owner-controls data-article={article} data-manage={managePath} class="print:hidden">
   {!article && <a data-login href={managePath}>로그인</a>}
   <a data-owner hidden href={article ? `${managePath}?post=${encodeURIComponent(article)}` : managePath}>
-    {article ? '이 글 수정' : '글 관리'}
+    {label ?? (article ? '이 글 수정' : '글 관리')}
   </a>
 </owner-controls>
 <script>
