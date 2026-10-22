@@ -72,7 +72,7 @@ for (const tag of draftTags) {
   if (!publishedTags.has(tag) && await exists(join(output, 'tags', tag, 'index.html'))) errors.push(`Draft-only tag was published: ${tag}`);
 }
 if (!(await exists(join(output, 'pagefind/pagefind.js')))) errors.push('Search index is missing.');
-for (const page of ['index.html', 'about/index.html', 'posts/index.html', 'admin/index.html']) {
+for (const page of ['index.html', 'posts/index.html', 'admin/index.html']) {
   if ((await readFile(join(output, page), 'utf8')).includes('<giscus-comments')) errors.push(`Comments were included on a non-article page: ${page}`);
 }
 const admin = await readFile(join(output, 'admin/index.html'), 'utf8');

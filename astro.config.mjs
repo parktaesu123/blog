@@ -31,7 +31,6 @@ export default defineConfig({
       { label: '개발', items: [{ autogenerate: { directory: 'development' } }] },
       { label: 'TIL', items: [{ autogenerate: { directory: 'til' } }] },
       { label: '일상·회고', items: [{ autogenerate: { directory: 'life' } }] },
-      { label: '소개', link: '/about/' },
     ],
     lastUpdated: false,
     pagination: false,
