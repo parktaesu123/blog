@@ -21,6 +21,7 @@ export default defineConfig({
       PageTitle: './src/components/PageTitle.astro',
       Footer: './src/components/Footer.astro',
       Header: './src/components/Header.astro',
+      Sidebar: './src/components/Sidebar.astro',
       ThemeProvider: './src/components/LightTheme.astro',
       ThemeSelect: './src/components/ThemeSelect.astro',
     },
