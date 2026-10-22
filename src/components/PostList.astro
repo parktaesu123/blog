@@ -1,5 +1,5 @@
 ---
-import { categoryOf, formatDate, type Post } from '../utils/posts';
+import { categoryOf, type Post } from '../utils/posts';
 import { sitePath, tagPath } from '../utils/paths';
 interface Props { posts: Post[]; }
 const { posts } = Astro.props;
@@ -10,7 +10,6 @@ const { posts } = Astro.props;
     <article class="post-item">
       <div class="post-meta">
         <span>{categoryOf(post)}</span>
-        {post.data.publishedAt && <time datetime={post.data.publishedAt.toISOString()}>{formatDate(post.data.publishedAt)}</time>}
       </div>
       <h3><a href={sitePath(`${post.id}/`)}>{post.data.title}</a></h3>
       {post.data.description && <p>{post.data.description}</p>}

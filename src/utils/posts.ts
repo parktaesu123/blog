@@ -17,12 +17,6 @@ export function categoryOf(post: Post) {
   return categories[post.id.split('/')[0]] ?? '기록';
 }
 
-export function formatDate(date: Date) {
-  return new Intl.DateTimeFormat('ko-KR', {
-    year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul',
-  }).format(date);
-}
-
 export function tagsOf(posts: Post[]) {
   return [...new Set(posts.flatMap((post) => post.data.tags))].sort((a, b) => a.localeCompare(b, 'ko'));
 }
