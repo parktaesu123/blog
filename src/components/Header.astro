@@ -13,6 +13,6 @@ const { siteTitle, siteTitleHref } = Astro.locals.starlightRoute;
 </div>
 <style>
   .blog-header { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; height: 100%; }
-  .header-tools { display: flex; align-items: center; gap: 2rem; }
-  @media (max-width: 49.99rem) { .blog-header, .header-tools { gap: 1rem; } }
+  .header-tools { display: flex; align-items: center; gap: .75rem; }
+  @media (max-width: 49.99rem) { .blog-header { gap: 1rem; } .header-tools { gap: .5rem; } }
 </style>

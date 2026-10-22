@@ -11,7 +11,7 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
     <div id="admin-workspace" hidden>
       <div class="admin-toolbar">
         <span id="admin-account"></span>
-        <button id="new-post" type="button">새 글 작성</button>
+        <button id="new-post" class="primary" type="button">새 글 작성</button>
         <button id="refresh-posts" type="button">목록 새로고침</button>
         <button id="admin-logout" type="button">로그아웃</button>
       </div>
@@ -35,21 +35,23 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
           <label><input id="post-comments" name="comments" type="checkbox" checked />댓글·좋아요 허용</label>
         </div>
         <p id="draft-note" class="editor-note">초안은 블로그에 표시되지 않습니다. 원본 파일은 공개 GitHub 저장소에 저장됩니다.</p>
-        <div class="editor-tabs">
-          <button id="show-writing" type="button" aria-pressed="true">본문 작성</button>
-          <button id="show-preview" type="button" aria-pressed="false">미리보기</button>
+        <div class="editor-composer">
+          <div class="editor-tabs">
+            <button id="show-writing" type="button" aria-pressed="true">본문 작성</button>
+            <button id="show-preview" type="button" aria-pressed="false">미리보기</button>
+          </div>
+          <div id="writing-tools" class="writing-tools" role="toolbar" aria-label="Markdown 도구">
+            <button type="button" data-markdown="heading">제목</button>
+            <button type="button" data-markdown="bold">굵게</button>
+            <button type="button" data-markdown="link">링크</button>
+            <button type="button" data-markdown="code">코드 블록</button>
+            <button id="attach-image" type="button">이미지 첨부</button>
+            <input id="image-files" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden />
+          </div>
+          <label id="body-label" class="body-label">본문<textarea id="post-body" name="body" rows="18" placeholder="## 오늘 배운 것&#10;&#10;Markdown으로 작성하고 이미지를 붙여넣어 보세요."></textarea></label>
+          <div id="post-preview" class="sl-markdown-content editor-preview" hidden></div>
+          <p class="editor-note composer-hint">Markdown으로 작성하세요. # 제목, **굵게**, 목록, 코드 블록을 미리보기에서 확인할 수 있습니다. 이미지는 본문에 붙여넣거나 끌어놓으세요. PNG·JPG·GIF·WebP, 파일당 최대 5MB.</p>
         </div>
-        <div id="writing-tools" class="writing-tools" role="toolbar" aria-label="Markdown 도구">
-          <button type="button" data-markdown="heading">제목</button>
-          <button type="button" data-markdown="bold">굵게</button>
-          <button type="button" data-markdown="link">링크</button>
-          <button type="button" data-markdown="code">코드 블록</button>
-          <button id="attach-image" type="button">이미지 첨부</button>
-          <input id="image-files" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden />
-        </div>
-        <p class="editor-note">Markdown으로 작성하세요. # 제목, **굵게**, 목록, 코드 블록을 미리보기에서 확인할 수 있습니다. 이미지는 본문에 붙여넣거나 끌어놓으세요. PNG·JPG·GIF·WebP, 파일당 최대 5MB.</p>
-        <label id="body-label" class="body-label">본문<textarea id="post-body" name="body" rows="18" placeholder="## 오늘 배운 것&#10;&#10;Markdown으로 작성하고 이미지를 붙여넣어 보세요."></textarea></label>
-        <div id="post-preview" class="sl-markdown-content editor-preview" hidden></div>
         <div id="attached-images" class="attached-images" aria-label="첨부 이미지" hidden></div>
         <p id="image-status" class="editor-note" role="status" aria-live="polite"></p>
         <p id="mdx-note" class="editor-note" hidden>MDX 글의 컴포넌트는 배포된 화면에서 확인할 수 있습니다. 여기서는 Markdown 본문을 미리 봅니다.</p>
@@ -73,43 +75,3 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 <script>
   import '../../scripts/admin-editor';
 </script>
-<style is:global>
-  .admin-view [hidden] { display: none !important; }
-  .admin-view button, .admin-button { padding: .5rem .9rem; border: 1px solid var(--sl-color-gray-4); border-radius: .4rem; background: var(--sl-color-bg); color: var(--sl-color-white); cursor: pointer; font: inherit; font-size: .875rem; text-decoration: none; }
-  .admin-view button:hover, .admin-button:hover { border-color: var(--sl-color-accent); }
-  .admin-view button:disabled { opacity: .55; cursor: wait; }
-  .admin-view .primary, .admin-button { background: var(--sl-color-text-accent); color: var(--sl-color-bg); border-color: transparent; }
-  .admin-view .danger { color: var(--sl-color-red-high); }
-  .admin-toolbar, .editor-heading, .editor-actions, .editor-tabs { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; margin: 1rem 0; }
-  .editor-heading { justify-content: space-between; }
-  .admin-posts { margin: 1.5rem 0 2rem; border-top: 1px solid var(--sl-color-hairline); }
-  .admin-post-row { display: flex; align-items: center; gap: 1rem; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid var(--sl-color-hairline); }
-  .admin-post-row strong { display: block; font-size: 1rem; }
-  .admin-post-row small { color: var(--sl-color-gray-2); }
-  .admin-post-actions { display: flex; align-items: center; gap: .75rem; flex: none; font-size: .875rem; }
-  .admin-view label { display: block; margin: 1rem 0; font-size: .875rem; font-weight: 600; }
-  .admin-view input:not([type=checkbox]), .admin-view select, .admin-view textarea { display: block; width: 100%; margin-top: .4rem; padding: .65rem .75rem; border: 1px solid var(--sl-color-gray-4); border-radius: .4rem; background: var(--sl-color-bg); color: var(--sl-color-white); font: inherit; font-weight: normal; }
-  .admin-view input:disabled, .admin-view select:disabled { opacity: .7; }
-  .admin-view textarea { resize: vertical; }
-  .admin-view :focus-visible { outline: 2px solid var(--sl-color-text-accent); outline-offset: 3px; }
-  .editor-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1rem; }
-  .editor-options { display: flex; flex-wrap: wrap; gap: 1.5rem; }
-  .editor-options label { display: flex; gap: .5rem; align-items: center; }
-  .admin-view .editor-note { color: var(--sl-color-gray-2); font-size: .8rem; line-height: 1.6; }
-  .admin-view .body-label { font-size: 0; }
-  .admin-view #post-body { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .9rem; line-height: 1.7; }
-  .editor-tabs [aria-pressed=true] { border-color: var(--sl-color-text-accent); color: var(--sl-color-text-accent); }
-  .editor-preview { padding: 1.5rem; border: 1px solid var(--sl-color-gray-4); border-radius: .4rem; min-height: 22rem; }
-  .writing-tools { display: flex; flex-wrap: wrap; gap: .5rem; }
-  .writing-tools button { padding: .35rem .6rem; }
-  .attached-images { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
-  .attached-images figure { margin: 0; max-width: 10rem; }
-  .attached-images img { display: block; max-width: 10rem; height: 7rem; object-fit: contain; border: 1px solid var(--sl-color-gray-4); border-radius: .4rem; }
-  .attached-images figcaption { font-size: .75rem; overflow-wrap: anywhere; color: var(--sl-color-gray-2); }
-  .editor-preview img { max-width: 100%; height: auto; }
-  .admin-view dialog { max-width: 30rem; width: calc(100% - 2rem); padding: 1.5rem; border: 1px solid var(--sl-color-gray-4); border-radius: .6rem; background: var(--sl-color-bg); color: var(--sl-color-white); }
-  .admin-view dialog::backdrop { background: #0008; }
-  .admin-view dialog h2 { margin-top: 0; }
-  .admin-view dialog .editor-actions { justify-content: flex-end; margin-bottom: 0; }
-  @media (max-width: 35rem) { .editor-grid { grid-template-columns: 1fr; } .admin-post-row { align-items: start; flex-direction: column; } }
-</style>
