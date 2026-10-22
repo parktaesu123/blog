@@ -1,10 +1,7 @@
 ---
-import SidebarPersister from '@astrojs/starlight/components/SidebarPersister.astro';
 import SidebarNavigation from './SidebarNavigation.astro';
 const { sidebar } = Astro.locals.starlightRoute;
 ---
 <div class="blog-sidebar">
-  <SidebarPersister>
-    <SidebarNavigation entries={sidebar} />
-  </SidebarPersister>
+  <SidebarNavigation entries={sidebar} />
 </div>

@@ -1,38 +1,23 @@
 ---
 import type { StarlightRouteData } from '@astrojs/starlight/route-data';
-import SidebarRestorePoint from '@astrojs/starlight/components/SidebarRestorePoint.astro';
 
 type Entry = StarlightRouteData['sidebar'][number];
-interface Props { entries: Entry[]; nested?: boolean; }
-const { entries, nested = false } = Astro.props;
-const firstGroup = entries.findIndex((entry) => entry.type === 'group');
-function countLinks(entry: Entry): number {
-  return entry.type === 'link' ? 1 : entry.entries.reduce((count, child) => count + countLinks(child), 0);
-}
-function hasCurrent(entry: Entry): boolean {
-  return entry.type === 'link' ? entry.isCurrent : entry.entries.some(hasCurrent);
-}
-
+interface Props { entries: Entry[]; nested?: boolean; label?: string; }
+const { entries, nested = false, label } = Astro.props;
 ---
-<ul class:list={['sidebar-navigation', nested ? 'category-posts' : 'sidebar-sections']}>
-  {entries.map((entry, index) => <>
-    {!nested && index === firstGroup && <li class="sidebar-section-label" aria-hidden="true">카테고리</li>}
+<ul class:list={['sidebar-navigation', nested ? 'category-posts' : 'sidebar-sections']} aria-label={label}>
+  {entries.map((entry) => (
     <li>
       {entry.type === 'link' ? (
         <a {...entry.attrs} href={entry.href} aria-current={entry.isCurrent ? 'page' : undefined} class:list={['sidebar-link', entry.attrs.class, { 'sidebar-overview-link': !nested }]}>
           <span class="sidebar-link-label">{entry.label}</span>
         </a>
       ) : (
-        <details class="sidebar-category" data-current={hasCurrent(entry) ? 'true' : undefined} open={countLinks(entry) > 0 && (hasCurrent(entry) || !entry.collapsed)}>
-          <summary class="category-heading" aria-label={`${entry.label}, 글 ${countLinks(entry)}개`}>
-            <span class="category-label">{entry.label}</span>
-            <span class="category-count" aria-hidden="true">{countLinks(entry)}</span>
-            <span class="category-toggle" aria-hidden="true"></span>
-          </summary>
-          <SidebarRestorePoint />
-          {entry.entries.length > 0 ? <Astro.self entries={entry.entries} nested /> : <p class="category-empty">아직 글이 없습니다.</p>}
-        </details>
+        <div class="sidebar-category">
+          <div class="category-heading">{entry.label}</div>
+          {entry.entries.length > 0 && <Astro.self entries={entry.entries} nested label={entry.label} />}
+        </div>
       )}
     </li>
-  </>)}
+  ))}
 </ul>
