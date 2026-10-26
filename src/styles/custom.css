@@ -97,6 +97,7 @@ site-search dialog::backdrop { background: rgb(31 35 40 / 24%); backdrop-filter:
 
 .content-panel:first-child { padding-top: 3rem; padding-bottom: .5rem; }
 h1#_top { font-size: clamp(1.75rem, 2.8vw, 2.25rem); font-weight: 700; line-height: 1.4; letter-spacing: -.025em; }
+.article-year { margin: .9rem 0 0; color: var(--blog-muted); font-size: .8125rem; font-weight: 400; line-height: 1.5; }
 .sl-markdown-content { font-size: 1rem; line-height: 1.85; letter-spacing: -.012em; }
 .sl-markdown-content h2 { font-weight: 650; font-size: 1.5rem; line-height: 1.5; letter-spacing: -.02em; }
 .sl-markdown-content h3 { font-weight: 650; font-size: 1.2rem; line-height: 1.5; letter-spacing: -.02em; }

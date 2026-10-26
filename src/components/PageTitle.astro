@@ -2,8 +2,12 @@
 import { isHomePage, tagPath } from '../utils/paths';
 const { entry } = Astro.locals.starlightRoute;
 const isHome = isHomePage(entry.id);
+const publishedYear = !isHome && entry.data.publishedAt
+  ? new Intl.DateTimeFormat('en', { year: 'numeric', timeZone: 'Asia/Seoul' }).format(entry.data.publishedAt)
+  : undefined;
 ---
 <h1 id="_top">{entry.data.title}</h1>
+{publishedYear && <p class="article-year">{publishedYear}</p>}
 {!isHome && entry.data.tags.length > 0 && <ul class="post-tags" aria-label="태그">
   {entry.data.tags.map((tag) => <li><a href={tagPath(tag)}>{tag}</a></li>)}
 </ul>}
