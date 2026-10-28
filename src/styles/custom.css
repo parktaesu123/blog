@@ -186,6 +186,32 @@ h1#_top { font-size: clamp(1.75rem, 2.8vw, 2.25rem); font-weight: 700; line-heig
 .admin-view dialog { max-width: 30rem; width: calc(100% - 2rem); padding: 1.5rem; border: 1px solid var(--blog-border); border-radius: var(--blog-radius); background: #fff; color: var(--sl-color-white); }
 .admin-view dialog::backdrop { background: rgb(31 35 40 / 32%); }
 .admin-view dialog h2 { margin-top: 0; }
+.admin-activity { margin: 2rem 0; padding-top: 1.5rem; border-top: 1px solid var(--blog-border); scroll-margin-top: calc(var(--sl-nav-height) + 1rem); }
+.activity-toolbar, .activity-detail-heading, .activity-comment-heading, .activity-comment-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.admin-view .activity-toolbar h2 { flex: 1; margin: 0; font-size: 1.4rem; font-weight: 650; }
+.admin-view .activity-toolbar > *, .admin-view .activity-comment-heading > *, .admin-view .activity-comment-actions > *, .admin-view .activity-detail-heading > * { margin: 0; }
+.admin-view .activity-discussions { margin: 1rem 0; padding: 0; list-style: none; border-top: 1px solid var(--blog-border); }
+.admin-view .activity-discussions li { margin: 0; padding: 0; border-bottom: 1px solid var(--blog-border); }
+.admin-view .activity-discussions button { display: block; width: 100%; padding: .9rem 0; border: 0; border-radius: 0; background: transparent; text-align: start; font-size: .9375rem; font-weight: 450; word-break: keep-all; overflow-wrap: anywhere; }
+.admin-view .activity-discussions button:hover { text-decoration: underline; text-underline-offset: .25em; }
+.admin-view .activity-discussions button[aria-pressed=true] { font-weight: 650; }
+.activity-detail { margin-top: 2rem; scroll-margin-top: calc(var(--sl-nav-height) + 1rem); }
+.admin-view .activity-detail-heading h3 { flex: 1; font-size: 1.125rem; font-weight: 650; word-break: keep-all; }
+.activity-detail-heading > a { flex: none; font-size: .8125rem; }
+.admin-view .activity-detail > section { margin: 1.5rem 0; padding-top: 1rem; border-top: 1px solid var(--blog-border); }
+.admin-view .activity-detail h4 { margin: 0 0 .75rem; font-size: 1rem; font-weight: 600; }
+.activity-reaction { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1rem; margin: 0; padding: .35rem 0; font-size: .875rem; }
+.admin-view .activity-reaction > * { margin: 0; }
+.admin-view .activity-note { color: var(--blog-muted); font-size: .8125rem; line-height: 1.7; }
+.admin-view .activity-note:empty { display: none; }
+.activity-comment { padding: 1rem 0; }
+.activity-comment + .activity-comment { border-top: 1px solid #eaeef2; }
+.activity-comment-heading { font-size: .875rem; }
+.activity-comment-heading > a:first-child { font-weight: 600; }
+.activity-comment-heading > a:last-child { margin-inline-start: auto; font-size: .8125rem; }
+.admin-view .activity-comment-body { margin: .75rem 0; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; overflow: auto; font-size: .9375rem; line-height: 1.8; }
+.admin-view .activity-comment-actions button { min-height: 2rem; padding: .25rem .5rem; background: transparent; color: var(--blog-muted); font-size: .75rem; }
+.activity-comment-children { margin: .75rem 0 0 .5rem; padding-inline-start: 1rem; border-inline-start: 1px solid var(--blog-border); }
 footer .meta:empty { display: none; }
 
 @media (max-width: 49.99rem) {

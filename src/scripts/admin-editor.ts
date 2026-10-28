@@ -3,6 +3,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { getSession, adminRequest, loginUrl, logout } from '../utils/admin';
 import { isHomePage, sitePath } from '../utils/paths';
+import { setActivityTitles } from './admin-activity';
 
 interface Doc { path: string; sha: string; content: string; }
 interface ParsedDoc { meta: Record<string, unknown>; body: string; }
@@ -198,6 +199,10 @@ async function loadList() {
   const entries = docs.map((doc) => ({ doc, parsed: parse(doc.content) })).sort((a, b) => {
     return new Date(String(b.parsed.meta.publishedAt ?? 0)).getTime() - new Date(String(a.parsed.meta.publishedAt ?? 0)).getTime();
   });
+  setActivityTitles(entries.flatMap(({ doc, parsed }) => {
+    const title = String(parsed.meta.title || doc.path);
+    return [documentUrl(doc.path, parsed.meta), `/${doc.path.replace(/\.mdx?$/, '')}/`].map((path) => ({ path, title }));
+  }));
   list.replaceChildren();
   if (!entries.length) list.textContent = '아직 글이 없습니다. 첫 글을 작성해 보세요.';
   for (const { doc, parsed } of entries) {

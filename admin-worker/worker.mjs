@@ -1,6 +1,7 @@
 const SITE = 'https://blog.taisu.site';
 const REPO = 'parktaesu123/blog';
 const OWNER_ID = 163130634;
+const COMMENT_CATEGORY = 'DIC_kwDOU_E-Rs4DHOvY';
 const ROOT = 'src/content/docs/';
 const SESSION_COOKIE = '__Host-taisu-session';
 const OAUTH_COOKIE = '__Host-taisu-oauth';
@@ -98,6 +99,64 @@ async function github(path, token, options = {}) {
   }
   return response.json();
 }
+
+const pageFields = 'totalCount pageInfo { hasNextPage endCursor }';
+const commentFields = 'id bodyText url createdAt author { login url } replies { totalCount } reactions { totalCount }';
+const commentConnection = `${pageFields} nodes { ${commentFields} }`;
+const reactionConnection = `${pageFields} nodes { content createdAt user { login url } }`;
+async function discussionQuery(query, variables, token) {
+  const result = await github('/graphql', token, { method: 'POST', body: JSON.stringify({ query, variables }) });
+  // GraphQL may report permission or upstream errors with an HTTP 200 response.
+  if (result.errors?.length || !result.data) throw new ApiError(502, '댓글과 반응을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+  return result.data;
+}
+function validateDiscussion(discussion) {
+  if (!discussion || discussion.category?.id !== COMMENT_CATEGORY) throw new ApiError(404, '블로그에 연결된 댓글을 찾을 수 없습니다.');
+  return discussion;
+}
+async function activity(url, token) {
+  const after = url.searchParams.get('after');
+  if (after !== null && (!after.length || after.length > 512 || /[\x00-\x1f\x7f]/.test(after))) throw new ApiError(400, '올바른 목록 위치가 아닙니다.');
+  const value = url.searchParams.get('discussion');
+  if (value === null) {
+    const data = await discussionQuery(`query BlogActivity($category: ID!, $after: String) {
+      repository(owner: "parktaesu123", name: "blog") {
+        discussions(categoryId: $category, first: 20, after: $after, orderBy: { field: UPDATED_AT, direction: DESC }) {
+          ${pageFields} nodes { number title url updatedAt comments { totalCount } reactions { totalCount } }
+        }
+      }
+    }`, { category: COMMENT_CATEGORY, after }, token);
+    if (!data.repository?.discussions) throw new ApiError(502, '댓글 목록을 확인하지 못했습니다.');
+    return json({ discussions: data.repository.discussions });
+  }
+  if (!/^[1-9]\d{0,9}$/.test(value) || Number(value) > 2147483647) throw new ApiError(400, '올바른 댓글 번호가 아닙니다.');
+  const number = Number(value);
+  const section = url.searchParams.get('section') || 'overview';
+  if (!['overview', 'comments', 'reactions', 'replies', 'comment-reactions'].includes(section)) throw new ApiError(400, '올바른 조회 항목이 아닙니다.');
+  if (section === 'replies' || section === 'comment-reactions') {
+    const id = url.searchParams.get('comment');
+    if (!id || !/^[A-Za-z0-9_+=/-]{1,256}$/.test(id)) throw new ApiError(400, '올바른 댓글 정보가 아닙니다.');
+    const field = section === 'replies' ? 'replies' : 'reactions';
+    const connection = field === 'replies' ? commentConnection : reactionConnection;
+    const data = await discussionQuery(`query BlogCommentActivity($id: ID!, $after: String) {
+      node(id: $id) { ... on DiscussionComment {
+        discussion { number category { id } repository { nameWithOwner } }
+        ${field}(first: ${field === 'replies' ? 30 : 100}, after: $after) { ${connection} }
+      } }
+    }`, { id, after }, token);
+    const discussion = validateDiscussion(data.node?.discussion);
+    if (discussion.number !== number || discussion.repository?.nameWithOwner !== REPO) throw new ApiError(404, '해당 글의 댓글을 찾을 수 없습니다.');
+    return json({ [field]: data.node[field] });
+  }
+  const selection = section === 'overview'
+    ? `number title url category { id } comments(first: 30) { ${commentConnection} } reactions(first: 100) { ${reactionConnection} }`
+    : `category { id } ${section}(first: ${section === 'comments' ? 30 : 100}, after: $after) { ${section === 'comments' ? commentConnection : reactionConnection} }`;
+  const data = await discussionQuery(`query BlogDiscussion($number: Int!${section === 'overview' ? '' : ', $after: String'}) {
+    repository(owner: "parktaesu123", name: "blog") { discussion(number: $number) { ${selection} } }
+  }`, section === 'overview' ? { number } : { number, after }, token);
+  const discussion = validateDiscussion(data.repository?.discussion);
+  return json(section === 'overview' ? { discussion } : { [section]: discussion[section] });
+}
 async function readSession(request, env) {
   const session = await unseal(readCookie(request, SESSION_COOKIE), env.SESSION_KEY);
   if (!session || session.id !== OWNER_ID || typeof session.token !== 'string' || typeof session.csrf !== 'string') return null;
@@ -165,6 +224,7 @@ async function route(request, env) {
     ? { authenticated: true, login: session.login, csrf: session.csrf }
     : { authenticated: false });
   if (!session) throw new ApiError(401, '작성자 계정으로 로그인해 주세요.');
+  if (url.pathname === '/activity' && request.method === 'GET') return activity(url, session.token);
   if (!['GET', 'HEAD'].includes(request.method)) {
     if (origin !== SITE || request.headers.get('X-CSRF-Token') !== session.csrf) throw new ApiError(403, '요청을 확인하지 못했습니다. 새로고침 후 다시 시도해 주세요.');
     const user = await github('/user', session.token);

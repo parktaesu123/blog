@@ -27,7 +27,7 @@ async function seal(value, secret) {
 function request(path, headers = {}, options = {}) { return new Request(origin + path, { ...options, headers: { Origin: site, ...headers } }); }
 
 test('Unauthenticated visitors cannot list or change posts', async () => {
-  for (const [path, method] of [['/posts','GET'], ['/post','PUT'], ['/post','DELETE'], ['/image','POST']]) {
+  for (const [path, method] of [['/posts','GET'], ['/post','PUT'], ['/post','DELETE'], ['/image','POST'], ['/activity','GET']]) {
     const result = await worker.fetch(request(path, {}, { method }), env);
     assert.equal(result.status, 401);
   }
@@ -163,4 +163,89 @@ test('Deletion requires the current file revision and remains limited to content
   assert.equal(missing.status, 400);
   const valid = await worker.fetch(request('/post', headers, { method: 'DELETE', body: JSON.stringify({ path: 'development/test.md', sha: 'a'.repeat(40) }) }), env);
   assert.equal(valid.status, 200);
+});
+
+const categoryId = 'DIC_kwDOU_E-Rs4DHOvY';
+const pageInfo = { hasNextPage: false, endCursor: null };
+const emptyPage = { totalCount: 0, nodes: [], pageInfo };
+test('Activity rejects another account before contacting GitHub', async () => {
+  const before = calls.length;
+  const result = await worker.fetch(request('/activity', { Cookie: await sessionCookie({ id: 99 }) }), env);
+  assert.equal(result.status, 401);
+  assert.equal(calls.length, before);
+});
+test('Activity lists only the fixed blog repository and Giscus category, with pagination', async () => {
+  const discussions = { totalCount: 21, nodes: [{ number: 1, title: '/life/comfort-zone/', url: 'https://github.com/parktaesu123/blog/discussions/1' }], pageInfo: { hasNextPage: true, endCursor: 'next-page' } };
+  handler = (url, options) => {
+    assert.equal(url, 'https://api.github.com/graphql'); assert.equal(options.method, 'POST');
+    const payload = JSON.parse(options.body);
+    assert.match(payload.query, /repository\(owner: "parktaesu123", name: "blog"\)/);
+    assert.match(payload.query, /discussions\(categoryId: \$category, first: 20/);
+    assert.equal(payload.variables.category, categoryId); assert.equal(payload.variables.after, 'cursor-1');
+    assert.equal(options.headers.Authorization, 'Bearer test-user-token');
+    return response({ data: { repository: { discussions } } });
+  };
+  const result = await worker.fetch(request('/activity?after=cursor-1', { Cookie: await sessionCookie() }), env);
+  assert.equal(result.status, 200); assert.deepEqual(await result.json(), { discussions });
+  assert.equal(result.headers.get('Cache-Control'), 'no-store');
+});
+test('Owner can see exact reaction users and comment authors, including deleted accounts', async () => {
+  const discussion = {
+    number: 1, title: '/life/comfort-zone/', url: 'https://github.com/parktaesu123/blog/discussions/1', category: { id: categoryId },
+    reactions: { totalCount: 1, nodes: [{ content: 'HEART', user: { login: 'reader', url: 'https://github.com/reader' }, createdAt: '2026-10-28T00:00:00Z' }], pageInfo },
+    comments: { totalCount: 1, nodes: [{ id: 'DC_1', bodyText: '<script>alert(1)</script>', author: null, replies: { totalCount: 1 }, reactions: { totalCount: 2 } }], pageInfo },
+  };
+  handler = (url, options) => {
+    assert.equal(url, 'https://api.github.com/graphql');
+    const payload = JSON.parse(options.body); assert.equal(payload.variables.number, 1);
+    assert.match(payload.query, /user \{ login url \}/); assert.match(payload.query, /author \{ login url \}/);
+    assert.doesNotMatch(payload.query, /mutation\b/);
+    return response({ data: { repository: { discussion } } });
+  };
+  const result = await worker.fetch(request('/activity?discussion=1', { Cookie: await sessionCookie() }), env);
+  assert.equal(result.status, 200); assert.deepEqual(await result.json(), { discussion });
+});
+test('Reaction and comment pages forward cursors without discarding later participants', async () => {
+  for (const section of ['comments', 'reactions']) {
+    handler = (url, options) => {
+      assert.equal(url, 'https://api.github.com/graphql');
+      const payload = JSON.parse(options.body); assert.equal(payload.variables.after, 'next-page');
+      return response({ data: { repository: { discussion: { category: { id: categoryId }, [section]: emptyPage } } } });
+    };
+    const result = await worker.fetch(request(`/activity?discussion=1&section=${section}&after=next-page`, { Cookie: await sessionCookie() }), env);
+    assert.equal(result.status, 200); assert.deepEqual(await result.json(), { [section]: emptyPage });
+  }
+});
+test('Replies and comment reactions remain bound to the chosen discussion in blog', async () => {
+  for (const section of ['replies', 'comment-reactions']) {
+    const field = section === 'replies' ? 'replies' : 'reactions';
+    handler = () => response({ data: { node: { discussion: { number: 1, category: { id: categoryId }, repository: { nameWithOwner: 'parktaesu123/blog' } }, [field]: emptyPage } } });
+    const result = await worker.fetch(request(`/activity?discussion=1&section=${section}&comment=DC_1`, { Cookie: await sessionCookie() }), env);
+    assert.equal(result.status, 200); assert.deepEqual(await result.json(), { [field]: emptyPage });
+  }
+  for (const discussion of [
+    { number: 2, category: { id: categoryId }, repository: { nameWithOwner: 'parktaesu123/blog' } },
+    { number: 1, category: { id: categoryId }, repository: { nameWithOwner: 'other/private-repo' } },
+    { number: 1, category: { id: 'another-category' }, repository: { nameWithOwner: 'parktaesu123/blog' } },
+  ]) {
+    handler = () => response({ data: { node: { discussion, replies: emptyPage } } });
+    const result = await worker.fetch(request('/activity?discussion=1&section=replies&comment=DC_1', { Cookie: await sessionCookie() }), env);
+    assert.equal(result.status, 404);
+  }
+});
+test('Activity rejects invalid input without sending arbitrary GraphQL queries', async () => {
+  const before = calls.length; const headers = { Cookie: await sessionCookie() };
+  for (const path of ['/activity?discussion=-1', '/activity?discussion=0', '/activity?discussion=2147483648', '/activity?discussion=1&section=mutation', '/activity?discussion=1&section=replies', '/activity?discussion=1&section=replies&comment=%22%7B', '/activity?after=%00', '/activity?after=' + 'a'.repeat(513)]) {
+    assert.equal((await worker.fetch(request(path, headers), env)).status, 400);
+  }
+  assert.equal(calls.length, before);
+});
+test('GraphQL failures and unknown discussions are not misreported as zero reactions', async () => {
+  const headers = { Cookie: await sessionCookie() };
+  handler = () => response({ errors: [{ message: 'Resource not accessible' }], data: { repository: null } });
+  assert.equal((await worker.fetch(request('/activity', headers), env)).status, 502);
+  handler = () => response({ data: { repository: { discussion: null } } });
+  assert.equal((await worker.fetch(request('/activity?discussion=1', headers), env)).status, 404);
+  handler = () => response({ data: { repository: { discussion: { category: { id: 'wrong-category' } } } } });
+  assert.equal((await worker.fetch(request('/activity?discussion=1', headers), env)).status, 404);
 });
