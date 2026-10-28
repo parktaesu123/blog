@@ -1,5 +1,6 @@
 import { load, dump } from 'js-yaml';
-import { marked } from 'marked';
+import { renderPreview } from '../utils/render-preview.mjs';
+import { splitEditorDocument, withEditorBody } from '../utils/editor-document.mjs';
 import DOMPurify from 'dompurify';
 import { getSession, adminRequest, loginUrl, logout } from '../utils/admin';
 import { isHomePage, sitePath } from '../utils/paths';
@@ -41,11 +42,10 @@ function koreaDate(value: unknown = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul' }).format(parsed);
 }
 function parse(content: string): ParsedDoc {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)([\s\S]*)$/);
-  if (!match) throw new Error('글의 제목 정보를 읽지 못했습니다. 원본 파일을 확인해 주세요.');
-  const meta = load(match[1]);
+  const document = splitEditorDocument(content);
+  const meta = load(document.frontmatter);
   if (!meta || typeof meta !== 'object' || Array.isArray(meta)) throw new Error('글의 제목 정보가 올바르지 않습니다.');
-  return { meta: meta as Record<string, unknown>, body: match[2].replace(/^\r?\n/, '') };
+  return { meta: meta as Record<string, unknown>, body: document.body };
 }
 function confirmAction(text: string, acceptLabel: string) {
   const dialog = element<HTMLDialogElement>('editor-confirm');
@@ -80,7 +80,7 @@ function tab(preview: boolean) {
   element('show-preview').setAttribute('aria-pressed', String(preview));
   if (preview) {
     const target = element('post-preview');
-    target.innerHTML = DOMPurify.sanitize(marked.parse(body.value, { async: false }));
+    target.innerHTML = DOMPurify.sanitize(renderPreview(body.value));
     for (const image of target.querySelectorAll('img')) {
       const attachment = attachments.get(image.getAttribute('src') || '');
       if (attachment) image.src = attachment.preview;
@@ -175,7 +175,7 @@ function serialized() {
   const meta: Record<string, unknown> = { ...metadata, title: title.value.trim(), description: description.value.trim() };
   if (isHomeIntroduction()) {
     meta.updatedAt = new Date();
-    return `---\n${dump(meta, { lineWidth: -1, noRefs: true, sortKeys: false })}---\n\n${body.value.trimEnd()}\n`;
+    return withEditorBody(dump(meta, { lineWidth: -1, noRefs: true, sortKeys: false }), body.value);
   }
   meta.publishedAt = metadata.publishedAt && date.value === koreaDate(metadata.publishedAt)
     ? metadata.publishedAt : `${date.value}T09:00:00+09:00`;
@@ -187,7 +187,7 @@ function serialized() {
   else { delete meta.draft; delete sidebar.hidden; }
   if (Object.keys(sidebar).length) meta.sidebar = sidebar; else delete meta.sidebar;
   if (selected) meta.updatedAt = new Date();
-  return `---\n${dump(meta, { lineWidth: -1, noRefs: true, sortKeys: false })}---\n\n${body.value.trimEnd()}\n`;
+  return withEditorBody(dump(meta, { lineWidth: -1, noRefs: true, sortKeys: false }), body.value);
 }
 async function getDoc(path: string) { return adminRequest<Doc>(`/post?path=${encodeURIComponent(path)}`); }
 async function loadList() {

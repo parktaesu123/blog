@@ -2,6 +2,8 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import { blog } from './blog.config.mjs';
 import { resolveSite } from './scripts/site-config.mjs';
+import remarkWrittenLayout from './src/utils/remark-written-layout.mjs';
+import { unified } from '@astrojs/markdown-remark';
 
 const { site, base } = resolveSite();
 
@@ -10,6 +12,7 @@ export default defineConfig({
   base,
   output: 'static',
   trailingSlash: 'always',
+  markdown: { processor: unified({ remarkPlugins: [remarkWrittenLayout], smartypants: false }) },
   redirects: { '/development/first-post/': '/' },
   integrations: [starlight({
     title: blog.title,
