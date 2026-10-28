@@ -1,0 +1,91 @@
+<reaction-accounts data-path={Astro.url.pathname} hidden>
+  <button type="button" aria-expanded="false">반응한 계정 보기</button>
+  <div data-accounts hidden>
+    <p role="status" aria-live="polite"></p>
+    <ul></ul>
+    <button data-more type="button" hidden>더 보기</button>
+  </div>
+</reaction-accounts>
+
+<script>
+  import { adminRequest, getSession } from '../utils/admin';
+
+  interface Page<T> { nodes: (T | null)[]; pageInfo: { hasNextPage: boolean; endCursor: string | null }; }
+  interface Discussion { number: number; title: string; }
+  interface Reaction { content: string; user: { login: string; url: string } | null; }
+  const labels: Record<string, string> = { THUMBS_UP: '좋아요', THUMBS_DOWN: '아쉬워요', LAUGH: '웃음', HOORAY: '축하', CONFUSED: '궁금해요', HEART: '하트', ROCKET: '응원', EYES: '관심' };
+  const pathKey = (path: string) => decodeURIComponent(path).replace(/^\/+|\/+$/g, '');
+
+  class ReactionAccounts extends HTMLElement {
+    async connectedCallback() {
+      try {
+        if (!(await getSession()).authenticated) return;
+      } catch { return; }
+      this.hidden = false;
+      const toggle = this.querySelector<HTMLButtonElement>('button')!;
+      const panel = this.querySelector<HTMLElement>('[data-accounts]')!;
+      const status = this.querySelector<HTMLElement>('[role=status]')!;
+      const list = this.querySelector('ul')!;
+      const more = this.querySelector<HTMLButtonElement>('[data-more]')!;
+      let discussion: number | undefined;
+      let cursor: string | null = null;
+
+      const load = async (reset: boolean) => {
+        toggle.disabled = true; more.disabled = true;
+        status.textContent = '반응한 계정을 불러오는 중입니다.';
+        if (reset) { list.replaceChildren(); cursor = null; more.hidden = true; discussion = undefined; }
+        try {
+          if (discussion === undefined) {
+            let after: string | null = null;
+            do {
+              const params: URLSearchParams = new URLSearchParams(after ? { after } : {});
+              const { discussions }: { discussions: Page<Discussion> } = await adminRequest(`/activity?${params}`);
+              discussion = discussions.nodes.find((item) => item && pathKey(item.title) === pathKey(this.dataset.path!))?.number;
+              after = discussions.pageInfo.hasNextPage ? discussions.pageInfo.endCursor : null;
+            } while (discussion === undefined && after);
+          }
+          if (discussion === undefined) { status.textContent = '아직 반응이 없습니다.'; return; }
+          const params = new URLSearchParams({ discussion: String(discussion), section: 'reactions', ...(cursor ? { after: cursor } : {}) });
+          const { reactions } = await adminRequest<{ reactions: Page<Reaction> }>(`/activity?${params}`);
+          for (const reaction of reactions.nodes) {
+            if (!reaction) continue;
+            const row = document.createElement('li');
+            const account = document.createElement('a');
+            account.textContent = reaction.user ? `@${reaction.user.login}` : '삭제된 계정';
+            if (reaction.user && /^[a-z\d-]+$/i.test(reaction.user.login)) {
+              account.href = `https://github.com/${encodeURIComponent(reaction.user.login)}`;
+              account.target = '_blank'; account.rel = 'noopener noreferrer';
+            }
+            const kind = document.createElement('span'); kind.textContent = labels[reaction.content] ?? reaction.content;
+            row.append(account, kind); list.append(row);
+          }
+          cursor = reactions.pageInfo.endCursor; more.hidden = !reactions.pageInfo.hasNextPage;
+          status.textContent = list.childElementCount ? '' : '아직 반응이 없습니다.';
+        } catch (error) { status.textContent = error instanceof Error ? error.message : '반응한 계정을 불러오지 못했습니다.'; }
+        finally { toggle.disabled = false; more.disabled = false; }
+      };
+      toggle.addEventListener('click', () => {
+        panel.hidden = !panel.hidden; toggle.setAttribute('aria-expanded', String(!panel.hidden));
+        toggle.textContent = panel.hidden ? '반응한 계정 보기' : '반응한 계정 닫기';
+        if (!panel.hidden) void load(true);
+      });
+      more.addEventListener('click', () => { void load(false); });
+    }
+  }
+  if (!customElements.get('reaction-accounts')) customElements.define('reaction-accounts', ReactionAccounts);
+</script>
+
+<style>
+  reaction-accounts { display: block; margin: 1rem 0; font-size: .875rem; }
+  [hidden] { display: none !important; }
+  button { padding: .35rem 0; border: 0; background: transparent; color: var(--blog-muted); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: .25em; }
+  button:disabled { cursor: wait; opacity: .6; }
+  [data-accounts] { margin-top: .75rem; padding: .75rem 0; border-block: 1px solid var(--blog-border); }
+  p { margin: 0; color: var(--blog-muted); }
+  p:empty { display: none; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { display: flex; flex-wrap: wrap; gap: 1rem; padding: .35rem 0; margin: 0; }
+  li > * { margin: 0; }
+  a { font-weight: 550; color: var(--sl-color-text-accent); }
+  span { color: var(--blog-muted); }
+</style>
