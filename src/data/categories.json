@@ -1,0 +1,8 @@
+{
+  "categories": [
+    { "id": "development", "label": "개발" },
+    { "id": "til", "label": "TIL" },
+    { "id": "life", "label": "일상·회고" }
+  ],
+  "redirects": {}
+}

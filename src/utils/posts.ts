@@ -1,10 +1,8 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { isHomePage } from './paths';
+import { resolveCategory } from './categories';
 
 export type Post = CollectionEntry<'docs'>;
-const categories: Record<string, string> = {
-  development: '개발', til: 'TIL', life: '일상·회고',
-};
 
 export async function getPosts(): Promise<Post[]> {
   const entries = await getCollection('docs');
@@ -14,7 +12,12 @@ export async function getPosts(): Promise<Post[]> {
 }
 
 export function categoryOf(post: Post) {
-  return categories[post.id.split('/')[0]] ?? '기록';
+  return resolveCategory(categoryIdOf(post)).label;
+}
+
+export function categoryIdOf(post: Post) {
+  const source = post.filePath?.split('src/content/docs/')[1] ?? post.id;
+  return resolveCategory(post.data.category ?? source.split('/')[0]).id;
 }
 
 export function tagsOf(posts: Post[]) {

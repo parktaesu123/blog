@@ -1,7 +1,23 @@
 ---
-import SidebarNavigation from './SidebarNavigation.astro';
-const { sidebar } = Astro.locals.starlightRoute;
+import { getPosts, categoryIdOf } from '../utils/posts';
+import { categoryConfig } from '../utils/categories';
+import { sitePath } from '../utils/paths';
+const posts = (await getPosts()).filter((post) => !post.data.sidebar.hidden);
+const current = decodeURIComponent(Astro.url.pathname).replace(/\/$/, '');
+const active = (url: string) => decodeURIComponent(url).replace(/\/$/, '') === current ? 'page' : undefined;
 ---
 <div class="blog-sidebar">
-  <SidebarNavigation entries={sidebar} />
+  <ul class="sidebar-navigation sidebar-sections">
+    <li><a class="sidebar-link sidebar-overview-link" href={sitePath()} aria-current={active(sitePath())}>홈</a></li>
+    <li><a class="sidebar-link sidebar-overview-link" href={sitePath('posts/')} aria-current={active(sitePath('posts/'))}>모든 글</a></li>
+    {categoryConfig.categories.map((category) => {
+      const children = posts.filter((post) => categoryIdOf(post) === category.id);
+      return <li><div class="sidebar-category">
+        <div class="category-heading">{category.label}</div>
+        {children.length > 0 && <ul class="sidebar-navigation category-posts" aria-label={category.label}>
+          {children.map((post) => <li><a class="sidebar-link" href={sitePath(`${post.id}/`)} aria-current={active(sitePath(`${post.id}/`))}>{post.data.sidebar.label ?? post.data.title}</a></li>)}
+        </ul>}
+      </div></li>;
+    })}
+  </ul>
 </div>

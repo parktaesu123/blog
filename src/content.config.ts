@@ -12,6 +12,7 @@ export const collections = {
         updatedAt: z.coerce.date().optional(),
         tags: z.array(z.string().trim().min(1)).default([]),
         comments: z.boolean().default(true),
+        category: z.string().optional(),
       }).superRefine((data, ctx) => {
         if (data.updatedAt && data.publishedAt && data.updatedAt < data.publishedAt) {
           ctx.addIssue({ code: 'custom', path: ['updatedAt'], message: '수정일은 발행일보다 빠를 수 없습니다.' });

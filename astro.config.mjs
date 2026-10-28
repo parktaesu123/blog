@@ -29,9 +29,6 @@ export default defineConfig({
     sidebar: [
       { label: '홈', link: '/' },
       { label: '모든 글', link: '/posts/' },
-      { label: '개발', items: [{ autogenerate: { directory: 'development' } }] },
-      { label: 'TIL', items: [{ autogenerate: { directory: 'til' } }] },
-      { label: '일상·회고', items: [{ autogenerate: { directory: 'life' } }] },
     ],
     lastUpdated: false,
     pagination: false,

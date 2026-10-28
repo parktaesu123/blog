@@ -27,7 +27,7 @@ async function seal(value, secret) {
 function request(path, headers = {}, options = {}) { return new Request(origin + path, { ...options, headers: { Origin: site, ...headers } }); }
 
 test('Unauthenticated visitors cannot list or change posts', async () => {
-  for (const [path, method] of [['/posts','GET'], ['/post','PUT'], ['/post','DELETE'], ['/image','POST'], ['/activity','GET']]) {
+  for (const [path, method] of [['/posts','GET'], ['/post','PUT'], ['/post','DELETE'], ['/image','POST'], ['/activity','GET'], ['/categories','GET'], ['/categories','PUT']]) {
     const result = await worker.fetch(request(path, {}, { method }), env);
     assert.equal(result.status, 401);
   }
@@ -248,4 +248,76 @@ test('GraphQL failures and unknown discussions are not misreported as zero react
   assert.equal((await worker.fetch(request('/activity?discussion=1', headers), env)).status, 404);
   handler = () => response({ data: { repository: { discussion: { category: { id: 'wrong-category' } } } } });
   assert.equal((await worker.fetch(request('/activity?discussion=1', headers), env)).status, 404);
+});
+
+const initialCategories = { categories: [{ id: 'development', label: '개발' }, { id: 'til', label: 'TIL' }, { id: 'life', label: '일상·회고' }], redirects: {} };
+const categorySha = 'a'.repeat(40);
+function categoryFile(config = initialCategories) {
+  const content = Buffer.from(JSON.stringify(config));
+  return { type: 'file', encoding: 'base64', size: content.length, sha: categorySha, content: content.toString('base64') };
+}
+test('Category settings are read only from the fixed JSON file for the owner', async () => {
+  handler = (url) => { assert.equal(url, 'https://api.github.com/repos/parktaesu123/blog/contents/src/data/categories.json?ref=main'); return response(categoryFile()); };
+  assert.equal((await worker.fetch(request('/categories', { Cookie: await sessionCookie({ id: 99 }) }), env)).status, 401);
+  const result = await worker.fetch(request('/categories', { Cookie: await sessionCookie() }), env);
+  assert.equal(result.status, 200);
+  assert.deepEqual(await result.json(), { config: initialCategories, sha: categorySha });
+  assert.equal(result.headers.get('Cache-Control'), 'no-store');
+});
+test('Category updates require CSRF and revalidate the owner before writing', async () => {
+  const payload = JSON.stringify({ config: initialCategories, sha: categorySha });
+  const headers = { Cookie: await sessionCookie() };
+  calls.length = 0;
+  assert.equal((await worker.fetch(request('/categories', headers, { method: 'PUT', body: payload }), env)).status, 403);
+  assert.equal(calls.length, 0);
+  handler = () => response({ id: 99 });
+  assert.equal((await worker.fetch(request('/categories', { ...headers, 'X-CSRF-Token': 'test-csrf' }, { method: 'PUT', body: payload }), env)).status, 403);
+});
+test('Renaming, reordering, adding and transferring a deleted category write only JSON with the current SHA', async () => {
+  const config = { categories: [{ id: 'life', label: '  일상  ' }, { id: 'til', label: '오늘 배운 것' }, { id: 'category-new', label: '독서' }], redirects: { development: 'life' } };
+  handler = (url, options) => {
+    if (url.endsWith('/user')) return response({ id: 163130634 });
+    if (url.endsWith('?ref=main')) return response(categoryFile());
+    assert.equal(url, 'https://api.github.com/repos/parktaesu123/blog/contents/src/data/categories.json');
+    assert.equal(options.method, 'PUT');
+    const data = JSON.parse(options.body);
+    assert.equal(data.branch, 'main'); assert.equal(data.sha, categorySha);
+    assert.deepEqual(JSON.parse(Buffer.from(data.content, 'base64').toString()), { ...config, categories: config.categories.map((item) => ({ ...item, label: item.label.trim() })) });
+    return response({ content: { sha: 'b'.repeat(40) }, commit: { sha: 'c'.repeat(40) } });
+  };
+  const result = await worker.fetch(request('/categories', { Cookie: await sessionCookie(), 'X-CSRF-Token': 'test-csrf' }, { method: 'PUT', body: JSON.stringify({ config, sha: categorySha, path: 'astro.config.mjs' }) }), env);
+  assert.equal(result.status, 200);
+  const saved = await result.json(); assert.equal(saved.sha, 'b'.repeat(40)); assert.equal(saved.config.categories[0].label, '일상');
+});
+test('Category updates reject malformed, cyclic, missing-transfer and stale settings without writing', async () => {
+  const headers = { Cookie: await sessionCookie(), 'X-CSRF-Token': 'test-csrf' };
+  handler = (url, options) => {
+    assert.notEqual(options.method, 'PUT');
+    return url.endsWith('/user') ? response({ id: 163130634 }) : response(categoryFile());
+  };
+  const invalid = [
+    { categories: [], redirects: {} },
+    { categories: [{ id: '../bad', label: '나쁜 경로' }], redirects: {} },
+    { categories: [{ id: 'life', label: ' ' }], redirects: {} },
+    { categories: [{ id: 'life', label: 'x'.repeat(41) }], redirects: {} },
+    { categories: [initialCategories.categories[0], initialCategories.categories[0]], redirects: {} },
+    { ...initialCategories, redirects: { old: 'missing' } },
+    { ...initialCategories, redirects: { old: 'older', older: 'old' } },
+    { categories: [initialCategories.categories[2]], redirects: {} },
+    { ...initialCategories, arbitrary: 'code' },
+  ];
+  for (const config of invalid) assert.equal((await worker.fetch(request('/categories', headers, { method: 'PUT', body: JSON.stringify({ config, sha: categorySha }) }), env)).status, 400);
+  assert.equal((await worker.fetch(request('/categories', headers, { method: 'PUT', body: JSON.stringify({ config: initialCategories, sha: 'f'.repeat(40) }) }), env)).status, 409);
+});
+test('Category transfers preserve earlier aliases and reject corrupt upstream JSON', async () => {
+  const headers = { Cookie: await sessionCookie(), 'X-CSRF-Token': 'test-csrf' };
+  const existing = { categories: initialCategories.categories.slice(1), redirects: { development: 'til' } };
+  handler = (url, options) => {
+    assert.notEqual(options.method, 'PUT');
+    return url.endsWith('/user') ? response({ id: 163130634 }) : response(categoryFile(existing));
+  };
+  const config = { categories: [initialCategories.categories[2]], redirects: { til: 'life' } };
+  assert.equal((await worker.fetch(request('/categories', headers, { method: 'PUT', body: JSON.stringify({ config, sha: categorySha }) }), env)).status, 400);
+  handler = () => response({ ...categoryFile(), content: Buffer.from('not json').toString('base64') });
+  assert.equal((await worker.fetch(request('/categories', headers), env)).status, 502);
 });

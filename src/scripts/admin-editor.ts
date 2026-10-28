@@ -4,6 +4,7 @@ import DOMPurify from 'dompurify';
 import { getSession, adminRequest, loginUrl, logout } from '../utils/admin';
 import { isHomePage, sitePath } from '../utils/paths';
 import { setActivityTitles } from './admin-activity';
+import { initCategories, loadCategories, selectedCategory } from './admin-categories';
 
 interface Doc { path: string; sha: string; content: string; }
 interface ParsedDoc { meta: Record<string, unknown>; body: string; }
@@ -57,12 +58,12 @@ function confirmAction(text: string, acceptLabel: string) {
 async function mayDiscard() { return !dirty || await confirmAction('저장하지 않은 내용이 있습니다. 변경 내용을 버릴까요?', '변경 내용 버리기'); }
 function setBusy(value: boolean) {
   busy = value;
-  for (const control of document.querySelectorAll<HTMLButtonElement>('.admin-view button')) control.disabled = value;
+  for (const control of document.querySelectorAll<HTMLButtonElement>('.admin-toolbar button, #admin-posts button, #post-editor button')) control.disabled = value;
   for (const control of form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select')) {
-    control.disabled = value || (Boolean(selected) && (control === category || control === slug));
+    control.disabled = value || (Boolean(selected) && control === slug);
   }
 }
-function postPath() { return selected?.path ?? `${category.value}/${slug.value}.md`; }
+function postPath() { return selected?.path ?? `${['development', 'til', 'life'].includes(category.value) ? category.value : 'development'}/${slug.value}.md`; }
 function isHomeIntroduction(meta = metadata) { return typeof meta.slug === 'string' && isHomePage(meta.slug); }
 function documentUrl(path: string, meta: Record<string, unknown>) {
   return sitePath(isHomeIntroduction(meta) ? '' : `${String(meta.slug ?? path.replace(/\.mdx?$/, ''))}/`);
@@ -148,9 +149,9 @@ async function openEditor(doc?: Doc) {
   metadata = parsed.meta;
   title.value = typeof metadata.title === 'string' ? metadata.title : '';
   description.value = typeof metadata.description === 'string' ? metadata.description : '';
-  category.value = doc?.path.split('/')[0] ?? 'development';
+  category.value = selectedCategory(String(metadata.category ?? doc?.path.split('/')[0] ?? 'development'));
   slug.value = doc?.path.split('/').slice(1).join('/').replace(/\.mdx?$/, '') ?? '';
-  category.disabled = Boolean(doc);
+  category.disabled = false;
   slug.disabled = Boolean(doc);
   date.value = koreaDate(metadata.publishedAt ?? new Date());
   date.max = koreaDate();
@@ -180,6 +181,7 @@ function serialized() {
     ? metadata.publishedAt : `${date.value}T09:00:00+09:00`;
   meta.tags = [...new Set(tags.value.split(',').map((tag) => tag.trim()).filter(Boolean))];
   meta.comments = comments.checked;
+  meta.category = category.value;
   const sidebar = metadata.sidebar && typeof metadata.sidebar === 'object' ? { ...metadata.sidebar as Record<string, unknown> } : {};
   if (draft.checked) { meta.draft = true; sidebar.hidden = true; }
   else { delete meta.draft; delete sidebar.hidden; }
@@ -263,7 +265,7 @@ form.addEventListener('submit', async (event) => {
     selected = { path, content, sha: result.sha! };
     metadata = parse(content).meta;
     dirty = false;
-    category.disabled = slug.disabled = true;
+    slug.disabled = true;
     element('delete-post').hidden = isHomeIntroduction();
     element('editor-heading').textContent = isHomeIntroduction() ? '홈 소개글 수정' : '글 수정';
     saveStatus.textContent = draft.checked ? '초안을 저장했습니다.' : '저장했습니다. 배포가 끝나면 블로그에 반영됩니다.';
@@ -302,6 +304,7 @@ async function start() {
     element('admin-workspace').hidden = false;
     element('admin-account').textContent = `${session.login} · 작성자`;
     status.textContent = '';
+    await loadCategories();
     await loadList();
     const post = new URLSearchParams(window.location.search).get('post');
     if (post) {
@@ -314,4 +317,5 @@ async function start() {
     element('admin-login').hidden = false;
   }
 }
+initCategories(confirmAction);
 start();

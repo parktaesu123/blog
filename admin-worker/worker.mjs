@@ -3,6 +3,7 @@ const REPO = 'parktaesu123/blog';
 const OWNER_ID = 163130634;
 const COMMENT_CATEGORY = 'DIC_kwDOU_E-Rs4DHOvY';
 const ROOT = 'src/content/docs/';
+const CATEGORY_FILE = 'src/data/categories.json';
 const SESSION_COOKIE = '__Host-taisu-session';
 const OAUTH_COOKIE = '__Host-taisu-oauth';
 const MAX_CONTENT = 256 * 1024;
@@ -64,6 +65,33 @@ function documentPath(value) {
   return ROOT + value;
 }
 function apiPath(value) { return value.split('/').map(encodeURIComponent).join('/'); }
+function categorySettings(value) {
+  const invalid = () => { throw new ApiError(400, '카테고리 설정이 올바르지 않습니다. 이름과 이동할 카테고리를 확인해 주세요.'); };
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some((key) => !['categories', 'redirects'].includes(key))) invalid();
+  if (!Array.isArray(value.categories) || value.categories.length < 1 || value.categories.length > 50) invalid();
+  const validId = (id) => typeof id === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(id) && !['constructor', 'prototype'].includes(id);
+  const ids = new Set();
+  const categories = value.categories.map((item) => {
+    if (!item || typeof item !== 'object' || Object.keys(item).some((key) => !['id', 'label'].includes(key)) || !validId(item.id) || ids.has(item.id)) invalid();
+    if (typeof item.label !== 'string' || !item.label.trim() || item.label.trim().length > 40 || /[\x00-\x1f\x7f]/.test(item.label)) invalid();
+    ids.add(item.id); return { id: item.id, label: item.label.trim() };
+  });
+  if (!value.redirects || typeof value.redirects !== 'object' || Array.isArray(value.redirects) || Object.keys(value.redirects).length > 200) invalid();
+  const redirects = {};
+  for (const [from, to] of Object.entries(value.redirects)) {
+    if (!validId(from) || ids.has(from) || !ids.has(to)) invalid();
+    redirects[from] = to;
+  }
+  return { categories, redirects };
+}
+async function readCategories(token) {
+  const file = await github(`/repos/${REPO}/contents/${CATEGORY_FILE}?ref=main`, token);
+  if (file.type !== 'file' || file.encoding !== 'base64' || file.size > 32768) throw new ApiError(502, '카테고리 설정 파일을 확인해 주세요.');
+  let config;
+  try { config = categorySettings(JSON.parse(new TextDecoder().decode(base64ToBytes(file.content.replaceAll('\n', ''))))); }
+  catch { throw new ApiError(502, '카테고리 설정 파일을 확인해 주세요.'); }
+  return { config, sha: file.sha };
+}
 function imagePath(name) {
   if (typeof name !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.(png|jpg|gif|webp)$/i.test(name)) throw new ApiError(400, '올바른 이미지 이름이 아닙니다.');
   return `public/uploads/${name}`;
@@ -225,12 +253,27 @@ async function route(request, env) {
     : { authenticated: false });
   if (!session) throw new ApiError(401, '작성자 계정으로 로그인해 주세요.');
   if (url.pathname === '/activity' && request.method === 'GET') return activity(url, session.token);
+  if (url.pathname === '/categories' && request.method === 'GET') return json(await readCategories(session.token));
   if (!['GET', 'HEAD'].includes(request.method)) {
     if (origin !== SITE || request.headers.get('X-CSRF-Token') !== session.csrf) throw new ApiError(403, '요청을 확인하지 못했습니다. 새로고침 후 다시 시도해 주세요.');
     const user = await github('/user', session.token);
     if (user.id !== OWNER_ID) throw new ApiError(403, '작성자 계정만 글을 관리할 수 있습니다.');
   }
   if (url.pathname === '/auth/logout' && request.method === 'POST') return json({ ok: true }, 200, { 'Set-Cookie': cookie(SESSION_COOKIE, '', 0) });
+  if (url.pathname === '/categories' && request.method === 'PUT') {
+    const data = await body(request, 32768);
+    const config = categorySettings(data.config);
+    if (typeof data.sha !== 'string' || !/^[a-f0-9]{40}$/i.test(data.sha)) throw new ApiError(400, '카테고리 버전을 확인하지 못했습니다.');
+    const current = await readCategories(session.token);
+    if (current.sha !== data.sha) throw new ApiError(409, '카테고리가 다른 곳에서 변경됐습니다. 다시 불러온 뒤 수정해 주세요.');
+    const removed = [...current.config.categories.map((item) => item.id), ...Object.keys(current.config.redirects)].filter((id) => !config.categories.some((item) => item.id === id));
+    if (removed.some((id) => !Object.hasOwn(config.redirects, id))) throw new ApiError(400, '삭제할 카테고리의 글을 옮길 카테고리를 선택해 주세요.');
+    const result = await github(`/repos/${REPO}/contents/${CATEGORY_FILE}`, session.token, { method: 'PUT', body: JSON.stringify({
+      branch: 'main', sha: data.sha, message: 'Update sidebar categories from blog editor',
+      content: bytesToBase64(encoder.encode(JSON.stringify(config, null, 2) + '\n')),
+    }) });
+    return json({ ok: true, config, sha: result.content?.sha, commit: result.commit?.sha });
+  }
   if (url.pathname === '/image' && request.method === 'POST') {
     const data = await body(request, Math.ceil(MAX_IMAGE / 3) * 4 + 1024);
     const path = imagePath(data.name);

@@ -14,9 +14,24 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
         <button id="new-post" class="primary" type="button">새 글 작성</button>
         <button id="refresh-posts" type="button">목록 새로고침</button>
         <button id="open-activity" type="button">댓글·반응</button>
+        <button id="open-categories" type="button">카테고리 편집</button>
         <button id="admin-logout" type="button">로그아웃</button>
       </div>
       <div id="admin-posts" class="admin-posts" aria-label="내 글 목록"></div>
+      <section id="admin-categories" class="admin-categories" aria-labelledby="categories-heading" hidden>
+        <div class="activity-toolbar">
+          <h2 id="categories-heading">카테고리 편집</h2>
+          <button id="close-categories" type="button">닫기</button>
+        </div>
+        <p class="editor-note">이름과 순서를 바꾸거나 카테고리를 추가할 수 있습니다. 삭제한 카테고리의 글은 선택한 곳으로 옮겨지며, 글 주소와 댓글은 유지됩니다.</p>
+        <div id="category-rows" class="category-editor-rows"></div>
+        <div class="editor-actions">
+          <button id="add-category" type="button">카테고리 추가</button>
+          <button id="save-categories" class="primary" type="button">변경사항 저장</button>
+          <button id="reload-categories" type="button">다시 불러오기</button>
+        </div>
+        <p id="categories-status" role="status" aria-live="polite"></p>
+      </section>
       <section id="admin-activity" class="admin-activity" aria-labelledby="activity-heading" hidden>
         <div class="activity-toolbar">
           <h2 id="activity-heading">댓글·반응</h2>
@@ -37,7 +52,7 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
         <label>제목<input id="post-title" name="title" required maxlength="200" /></label>
         <label>짧은 소개<textarea id="post-description" name="description" rows="2" maxlength="1000"></textarea></label>
         <div id="post-details" class="editor-grid">
-          <label>카테고리<select id="post-category" name="category"><option value="development">개발</option><option value="til">TIL</option><option value="life">일상·회고</option></select></label>
+          <label>카테고리<select id="post-category" name="category"></select></label>
           <label>글 주소<input id="post-slug" name="slug" required pattern="[a-z0-9][a-z0-9-]*" placeholder="my-first-note" /></label>
           <label>발행일<input id="post-date" name="date" type="date" required /></label>
           <label>태그<input id="post-tags" name="tags" placeholder="JavaScript, 기록" /></label>
