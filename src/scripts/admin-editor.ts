@@ -20,7 +20,7 @@ const category = element<HTMLSelectElement>('post-category');
 const slug = element<HTMLInputElement>('post-slug');
 const date = element<HTMLInputElement>('post-date');
 const tags = element<HTMLInputElement>('post-tags');
-const draft = element<HTMLInputElement>('post-draft');
+const draftButton = element<HTMLButtonElement>('save-draft');
 const comments = element<HTMLInputElement>('post-comments');
 const body = element<HTMLTextAreaElement>('post-body');
 const saveStatus = element<HTMLParagraphElement>('save-status');
@@ -70,7 +70,13 @@ function documentUrl(path: string, meta: Record<string, unknown>) {
 }
 function updateAddress() {
   element('post-address').textContent = selected || slug.value ? `주소: ${new URL(documentUrl(postPath(), metadata), window.location.origin).href}` : '글 주소에 짧은 영문 이름을 입력해 주세요.';
-  element<HTMLButtonElement>('save-post').textContent = isHomeIntroduction() ? '소개글 저장' : draft.checked ? '초안 저장' : selected ? '수정한 글 발행' : '글 발행';
+  const published = Boolean(selected) && metadata.draft !== true;
+  element<HTMLButtonElement>('save-post').textContent = isHomeIntroduction() ? '소개글 저장' : published ? '수정사항 저장' : '글 발행';
+  draftButton.hidden = isHomeIntroduction();
+  draftButton.textContent = published ? '초안으로 전환' : '초안 저장';
+  // Enter saves a draft for new/unpublished posts, and saves edits for published posts.
+  draftButton.type = published || isHomeIntroduction() ? 'button' : 'submit';
+  element('post-publication-state').textContent = isHomeIntroduction() ? '홈 소개글' : published ? '발행된 글입니다.' : '초안 · 아직 블로그에 공개되지 않았습니다. 글 발행을 누르면 공개됩니다.';
 }
 function tab(preview: boolean) {
   element('body-label').hidden = preview;
@@ -156,7 +162,6 @@ async function openEditor(doc?: Doc) {
   date.value = koreaDate(metadata.publishedAt ?? new Date());
   date.max = koreaDate();
   tags.value = Array.isArray(metadata.tags) ? metadata.tags.join(', ') : '';
-  draft.checked = doc ? metadata.draft === true : true;
   comments.checked = metadata.comments !== false;
   body.value = parsed.body;
   dirty = false;
@@ -171,7 +176,7 @@ async function openEditor(doc?: Doc) {
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   title.focus({ preventScroll: true });
 }
-function serialized() {
+function serialized(asDraft: boolean) {
   const meta: Record<string, unknown> = { ...metadata, title: title.value.trim(), description: description.value.trim() };
   if (isHomeIntroduction()) {
     meta.updatedAt = new Date();
@@ -183,7 +188,7 @@ function serialized() {
   meta.comments = comments.checked;
   meta.category = category.value;
   const sidebar = metadata.sidebar && typeof metadata.sidebar === 'object' ? { ...metadata.sidebar as Record<string, unknown> } : {};
-  if (draft.checked) { meta.draft = true; sidebar.hidden = true; }
+  if (asDraft) { meta.draft = true; sidebar.hidden = true; }
   else { delete meta.draft; delete sidebar.hidden; }
   if (Object.keys(sidebar).length) meta.sidebar = sidebar; else delete meta.sidebar;
   if (selected) meta.updatedAt = new Date();
@@ -251,12 +256,13 @@ element('close-editor').addEventListener('click', async () => { if (await mayDis
 element('refresh-posts').addEventListener('click', () => { loadList().catch((error) => { status.textContent = message(error); }); });
 element('admin-logout').addEventListener('click', async () => { if (await mayDiscard()) logout().catch((error) => { status.textContent = message(error); }); });
 window.addEventListener('beforeunload', (event) => { if (dirty) { event.preventDefault(); } });
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
+async function saveDocument(asDraft: boolean) {
   if (busy || !form.reportValidity()) return;
   if (!title.value.trim()) { saveStatus.textContent = '제목을 입력해 주세요.'; return; }
+  const wasPublished = Boolean(selected) && metadata.draft !== true;
+  if (asDraft && wasPublished && !isHomeIntroduction() && !(await confirmAction('이 글을 초안으로 전환하면 블로그에서 공개되지 않습니다. 계속할까요?', '초안으로 전환'))) return;
   const path = postPath();
-  const content = serialized();
+  const content = serialized(asDraft);
   setBusy(true); saveStatus.textContent = '저장하고 있습니다.';
   try {
     await uploadImages(content);
@@ -268,13 +274,23 @@ form.addEventListener('submit', async (event) => {
     slug.disabled = true;
     element('delete-post').hidden = isHomeIntroduction();
     element('editor-heading').textContent = isHomeIntroduction() ? '홈 소개글 수정' : '글 수정';
-    saveStatus.textContent = draft.checked ? '초안을 저장했습니다.' : '저장했습니다. 배포가 끝나면 블로그에 반영됩니다.';
+    updateAddress();
+    saveStatus.textContent = isHomeIntroduction() ? '소개글을 저장했습니다. 배포가 완료되면 반영됩니다.'
+      : asDraft ? '초안을 저장했습니다. 글 발행을 누르면 블로그에 공개됩니다.'
+      : wasPublished ? '수정사항을 저장했습니다. 배포가 완료되면 반영됩니다.' : '발행했습니다. 배포가 완료되면 블로그에서 확인할 수 있습니다.';
     if (result.commitUrl) {
       const link = document.createElement('a'); link.textContent = ' 저장 내역 보기'; link.href = result.commitUrl; link.target = '_blank'; link.rel = 'noopener noreferrer'; saveStatus.append(link);
     }
     await loadList();
   } catch (error) { saveStatus.textContent = message(error); }
   finally { setBusy(false); }
+}
+form.addEventListener('submit', (event) => {
+  event.preventDefault();
+  void saveDocument(event.submitter === draftButton);
+});
+draftButton.addEventListener('click', () => {
+  if (draftButton.type === 'button') void saveDocument(true);
 });
 element('delete-post').addEventListener('click', async () => {
   if (!selected || isHomeIntroduction() || busy || !(await confirmAction(`“${title.value}” 글을 삭제할까요? 블로그에서 내려가며 저장소의 변경 이력에는 남습니다.`, '글 삭제'))) return;

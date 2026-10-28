@@ -49,6 +49,7 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
           <h2 id="editor-heading">새 글 작성</h2>
           <button id="close-editor" type="button">닫기</button>
         </div>
+        <p id="post-publication-state" class="editor-note"></p>
         <label>제목<input id="post-title" name="title" required maxlength="200" /></label>
         <label>짧은 소개<textarea id="post-description" name="description" rows="2" maxlength="1000"></textarea></label>
         <div id="post-details" class="editor-grid">
@@ -59,7 +60,6 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
         </div>
         <p id="post-address" class="editor-note"></p>
         <div id="post-options" class="editor-options">
-          <label><input id="post-draft" name="draft" type="checkbox" checked />초안으로 저장</label>
           <label><input id="post-comments" name="comments" type="checkbox" checked />댓글·좋아요 허용</label>
         </div>
         <p id="draft-note" class="editor-note">초안은 블로그에 표시되지 않습니다. 원본 파일은 공개 GitHub 저장소에 저장됩니다.</p>
@@ -84,7 +84,8 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
         <p id="image-status" class="editor-note" role="status" aria-live="polite"></p>
         <p id="mdx-note" class="editor-note" hidden>MDX 글의 컴포넌트는 배포된 화면에서 확인할 수 있습니다. 여기서는 Markdown 본문을 미리 봅니다.</p>
         <div class="editor-actions">
-          <button id="save-post" class="primary" type="submit">초안 저장</button>
+          <button id="save-draft" type="submit">초안 저장</button>
+          <button id="save-post" class="primary" type="submit">글 발행</button>
           <button id="delete-post" class="danger" type="button" hidden>글 삭제</button>
         </div>
         <p id="save-status" role="status" aria-live="polite"></p>
