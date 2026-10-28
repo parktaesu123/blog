@@ -2,14 +2,11 @@
 title: 완성되지 않은 생각의 가치
 description: ''
 publishedAt: 2026-10-07T01:00:00.000Z
-draft: true
-sidebar:
-  hidden: true
 tags:
   - 단상
 comments: true
 category: til
-updatedAt: 2026-10-28T02:15:41.316Z
+updatedAt: 2026-10-28T03:59:14.663Z
 ---
 
 ###  생각나는 대로의 단편적인 생각
