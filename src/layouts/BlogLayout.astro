@@ -1,0 +1,51 @@
+---
+import Header from '../components/Header.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import Search from '../components/Search.astro';
+import { blog } from '../../blog.config.mjs';
+import { sitePath } from '../utils/paths';
+import '../styles/custom.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Marks the main content as searchable. */
+  searchable?: boolean;
+  noindex?: boolean;
+  article?: boolean;
+  wide?: boolean;
+}
+const { title, description = blog.description, searchable = false, noindex = false, article = false, wide = false } = Astro.props;
+const pageTitle = title ? `${title} | ${blog.title}` : blog.title;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={sitePath('favicon.svg')} />
+    <link rel="sitemap" href={sitePath('sitemap-index.xml')} />
+    <link rel="preload" href={sitePath('fonts/PretendardVariable.woff2')} as="font" type="font/woff2" crossorigin />
+    <meta property="og:type" content={article ? 'article' : 'website'} />
+    <meta property="og:site_name" content={blog.title} />
+    <meta property="og:title" content={title ?? blog.title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="ko_KR" />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
+  </head>
+  <body>
+    <a class="skip-link" href="#main">본문으로 건너뛰기</a>
+    <Header />
+    <main id="main" class:list={['site-main', { 'site-main-wide': wide }]} data-pagefind-body={searchable || undefined}>
+      <slot />
+    </main>
+    <SiteFooter />
+    <Search />
+  </body>
+</html>

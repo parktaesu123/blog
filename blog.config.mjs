@@ -4,6 +4,14 @@ export const blog = {
   title: '일신우일신',
   description: '개발하며 배운 것과 일상에서 발견한 것을 기록합니다.',
   author: '태수',
+  // 홈과 소개 페이지의 프로필에 표시됩니다.
+  profile: {
+    name: '박태수',
+    role: '매일 조금씩 나아지는 개발자',
+    links: [
+      { label: 'GitHub', href: 'https://github.com/parktaesu123' },
+    ],
+  },
   repository: 'parktaesu123/blog',
   admin: {
     api: 'https://blog-admin.taisu.site',

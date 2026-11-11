@@ -1,0 +1,25 @@
+---
+import BlogLayout from '../../layouts/BlogLayout.astro';
+import PostList from '../../components/PostList.astro';
+import CategoryTabs from '../../components/CategoryTabs.astro';
+import { getPosts, groupByCategory, type Post } from '../../utils/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return groupByCategory(posts).map((group) => ({
+    params: { category: group.id },
+    props: { id: group.id, label: group.label, posts, categoryPosts: group.posts },
+  }));
+}
+interface Props { id: string; label: string; posts: Post[]; categoryPosts: Post[]; }
+const { id, label, posts, categoryPosts } = Astro.props;
+---
+<BlogLayout title={label} description={`${label} 카테고리의 글 모음`}>
+  <header class="page-header">
+    <p class="page-eyebrow">카테고리</p>
+    <h1>{label}</h1>
+    <p class="page-lede">{categoryPosts.length}개의 글</p>
+  </header>
+  <CategoryTabs posts={posts} active={id} />
+  <PostList posts={categoryPosts} />
+</BlogLayout>

@@ -1,0 +1,15 @@
+---
+import { blog } from '../../blog.config.mjs';
+import { sitePath } from '../utils/paths';
+const year = new Date().getFullYear();
+---
+<footer class="site-footer" data-pagefind-ignore>
+  <div class="site-footer-inner">
+    <p>© {year} {blog.profile.name}</p>
+    <nav aria-label="하단 메뉴">
+      <a href={sitePath('posts/')}>글</a>
+      <a href={sitePath('about/')}>소개</a>
+      {blog.profile.links.map((link) => <a href={link.href} target="_blank" rel="noopener">{link.label}</a>)}
+    </nav>
+  </div>
+</footer>

@@ -3,7 +3,7 @@ import { renderPreview } from '../utils/render-preview.mjs';
 import { splitEditorDocument, withEditorBody } from '../utils/editor-document.mjs';
 import DOMPurify from 'dompurify';
 import { getSession, adminRequest, loginUrl, logout } from '../utils/admin';
-import { isHomePage, sitePath } from '../utils/paths';
+import { INTRODUCTION_SLUG, isIntroduction, sitePath } from '../utils/paths';
 import { setActivityTitles } from './admin-activity';
 import { initCategories, loadCategories, selectedCategory } from './admin-categories';
 
@@ -64,9 +64,9 @@ function setBusy(value: boolean) {
   }
 }
 function postPath() { return selected?.path ?? `${['development', 'til', 'life'].includes(category.value) ? category.value : 'development'}/${slug.value}.md`; }
-function isHomeIntroduction(meta = metadata) { return typeof meta.slug === 'string' && isHomePage(meta.slug); }
+function isHomeIntroduction(meta = metadata) { return typeof meta.slug === 'string' && isIntroduction(meta.slug); }
 function documentUrl(path: string, meta: Record<string, unknown>) {
-  return sitePath(isHomeIntroduction(meta) ? '' : `${String(meta.slug ?? path.replace(/\.mdx?$/, ''))}/`);
+  return sitePath(isHomeIntroduction(meta) ? `${INTRODUCTION_SLUG}/` : `${String(meta.slug ?? path.replace(/\.mdx?$/, ''))}/`);
 }
 function updateAddress() {
   element('post-address').textContent = selected || slug.value ? `주소: ${new URL(documentUrl(postPath(), metadata), window.location.origin).href}` : '글 주소에 짧은 영문 이름을 입력해 주세요.';
@@ -76,7 +76,7 @@ function updateAddress() {
   draftButton.textContent = published ? '초안으로 전환' : '초안 저장';
   // Enter saves a draft for new/unpublished posts, and saves edits for published posts.
   draftButton.type = published || isHomeIntroduction() ? 'button' : 'submit';
-  element('post-publication-state').textContent = isHomeIntroduction() ? '홈 소개글' : published ? '발행된 글입니다.' : '초안 · 아직 블로그에 공개되지 않았습니다. 글 발행을 누르면 공개됩니다.';
+  element('post-publication-state').textContent = isHomeIntroduction() ? '소개글' : published ? '발행된 글입니다.' : '초안 · 아직 블로그에 공개되지 않았습니다. 글 발행을 누르면 공개됩니다.';
 }
 function tab(preview: boolean) {
   element('body-label').hidden = preview;
@@ -166,7 +166,7 @@ async function openEditor(doc?: Doc) {
   body.value = parsed.body;
   dirty = false;
   saveStatus.textContent = '';
-  element('editor-heading').textContent = isHomeIntroduction() ? '홈 소개글 수정' : doc ? '글 수정' : '새 글 작성';
+  element('editor-heading').textContent = isHomeIntroduction() ? '소개글 수정' : doc ? '글 수정' : '새 글 작성';
   element('delete-post').hidden = !doc || isHomeIntroduction();
   for (const id of ['post-details', 'post-options', 'draft-note']) element(id).hidden = isHomeIntroduction();
   element('mdx-note').hidden = !doc?.path.endsWith('.mdx');
@@ -216,14 +216,14 @@ async function loadList() {
     const row = document.createElement('article'); row.className = 'admin-post-row';
     const info = document.createElement('div');
     const heading = document.createElement('strong'); heading.textContent = String(parsed.meta.title || doc.path);
-    const detail = document.createElement('small'); detail.textContent = isHomeIntroduction(parsed.meta) ? '홈 소개글' : `${parsed.meta.draft ? '초안' : '발행됨'} · ${doc.path}`;
+    const detail = document.createElement('small'); detail.textContent = isHomeIntroduction(parsed.meta) ? '소개글' : `${parsed.meta.draft ? '초안' : '발행됨'} · ${doc.path}`;
     info.append(heading, detail);
     const actions = document.createElement('div'); actions.className = 'admin-post-actions';
     const edit = document.createElement('button'); edit.type = 'button'; edit.textContent = '수정'; edit.addEventListener('click', async () => {
       try { await openEditor(doc); } catch (error) { status.textContent = message(error); }
     }); actions.append(edit);
     if (!parsed.meta.draft) {
-      const view = document.createElement('a'); view.textContent = isHomeIntroduction(parsed.meta) ? '홈 보기' : '글 보기'; view.href = documentUrl(doc.path, parsed.meta); actions.append(view);
+      const view = document.createElement('a'); view.textContent = isHomeIntroduction(parsed.meta) ? '소개 보기' : '글 보기'; view.href = documentUrl(doc.path, parsed.meta); actions.append(view);
     }
     row.append(info, actions); list.append(row);
   }
@@ -273,7 +273,7 @@ async function saveDocument(asDraft: boolean) {
     dirty = false;
     slug.disabled = true;
     element('delete-post').hidden = isHomeIntroduction();
-    element('editor-heading').textContent = isHomeIntroduction() ? '홈 소개글 수정' : '글 수정';
+    element('editor-heading').textContent = isHomeIntroduction() ? '소개글 수정' : '글 수정';
     updateAddress();
     saveStatus.textContent = isHomeIntroduction() ? '소개글을 저장했습니다. 배포가 완료되면 반영됩니다.'
       : asDraft ? '초안을 저장했습니다. 글 발행을 누르면 블로그에 공개됩니다.'

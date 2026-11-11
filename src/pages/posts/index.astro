@@ -1,9 +1,15 @@
 ---
-import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import BlogLayout from '../../layouts/BlogLayout.astro';
 import PostList from '../../components/PostList.astro';
+import CategoryTabs from '../../components/CategoryTabs.astro';
 import { getPosts } from '../../utils/posts';
 const posts = await getPosts();
 ---
-<StarlightPage frontmatter={{ title: '모든 글', description: '개발과 일상의 기록을 발행일 순으로 모았습니다.', tableOfContents: false }}>
+<BlogLayout title="모든 글" description="개발과 일상의 기록을 발행일 순으로 모았습니다.">
+  <header class="page-header">
+    <h1>모든 글</h1>
+    <p class="page-lede">개발하며 배운 것과 일상에서 발견한 것을 발행일 순으로 모았습니다.</p>
+  </header>
+  <CategoryTabs posts={posts} />
   <PostList posts={posts} />
-</StarlightPage>
+</BlogLayout>

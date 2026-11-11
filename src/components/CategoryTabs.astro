@@ -1,0 +1,13 @@
+---
+import { groupByCategory, type Post } from '../utils/posts';
+import { categoryPath, sitePath } from '../utils/paths';
+interface Props { posts: Post[]; active?: string; }
+const { posts, active } = Astro.props;
+const groups = groupByCategory(posts);
+---
+<nav class="category-tabs" aria-label="카테고리">
+  <a href={sitePath('posts/')} aria-current={!active ? 'page' : undefined}>전체 <span>{posts.length}</span></a>
+  {groups.map((group) => (
+    <a href={categoryPath(group.id)} aria-current={active === group.id ? 'page' : undefined}>{group.label} <span>{group.posts.length}</span></a>
+  ))}
+</nav>

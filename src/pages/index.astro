@@ -1,0 +1,54 @@
+---
+import BlogLayout from '../layouts/BlogLayout.astro';
+import PostList from '../components/PostList.astro';
+import { blog } from '../../blog.config.mjs';
+import { getPosts, groupByCategory } from '../utils/posts';
+import { categoryPath, sitePath } from '../utils/paths';
+
+const posts = await getPosts();
+const groups = groupByCategory(posts);
+const avatar = `https://github.com/${blog.admin.owner}.png?size=200`;
+---
+<BlogLayout description={blog.description}>
+  <section class="home-hero" aria-labelledby="home-title">
+    <img class="home-avatar" src={avatar} alt="" width="72" height="72" decoding="async" />
+    <h1 id="home-title">{blog.title}</h1>
+    <p class="home-lede">{blog.description}</p>
+    <p class="home-byline">
+      <span>{blog.profile.name}</span>
+      <span aria-hidden="true">·</span>
+      <span>{blog.profile.role}</span>
+    </p>
+    <div class="home-actions">
+      <a class="button button-primary" href={sitePath('about/')}>소개 보기</a>
+      <a class="button" href={sitePath('posts/')}>모든 글</a>
+    </div>
+  </section>
+
+  <section class="home-section" aria-labelledby="home-categories">
+    <div class="section-heading">
+      <h2 id="home-categories">카테고리</h2>
+    </div>
+    <ul class="category-grid">
+      {groups.map((group) => (
+        <li>
+          <a class="category-card" href={categoryPath(group.id)}>
+            <span class="category-card-head">
+              <span class="category-card-name">{group.label}</span>
+              <span class="category-card-count">{group.posts.length}개의 글</span>
+            </span>
+            <span class="category-card-latest">{group.posts[0]?.data.title ?? '아직 글이 없습니다.'}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="home-section" aria-labelledby="home-recent">
+    <div class="section-heading">
+      <h2 id="home-recent">최신글</h2>
+      <a class="text-link" href={sitePath('posts/')}>모든 글 보기 →</a>
+    </div>
+    <PostList posts={posts.slice(0, 6)} />
+  </section>
+</BlogLayout>

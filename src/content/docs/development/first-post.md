@@ -1,6 +1,6 @@
 ---
 title: 일신우일신
-slug: index
+slug: about
 description: 블로그를 시작한 이유
 tableOfContents: false
 sidebar:

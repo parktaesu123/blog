@@ -1,0 +1,16 @@
+---
+import { blog } from '../../blog.config.mjs';
+interface Props { size?: 'large' | 'small'; }
+const { size = 'small' } = Astro.props;
+const avatar = `https://github.com/${blog.admin.owner}.png?size=200`;
+---
+<div class:list={['profile', `profile-${size}`]}>
+  <img class="profile-avatar" src={avatar} alt="" width={size === 'large' ? 88 : 56} height={size === 'large' ? 88 : 56} loading="lazy" decoding="async" />
+  <div class="profile-text">
+    <p class="profile-name">{blog.profile.name}</p>
+    <p class="profile-role">{blog.profile.role}</p>
+    <ul class="profile-links">
+      {blog.profile.links.map((link) => <li><a href={link.href} target="_blank" rel="noopener">{link.label} ↗</a></li>)}
+    </ul>
+  </div>
+</div>

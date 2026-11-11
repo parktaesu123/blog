@@ -49,21 +49,21 @@ async function checkDocuments(directory, relative = '') {
       continue;
     }
     if (!data.publishedAt) continue;
-    const isHome = slug === '';
-    if (!isHome) for (const tag of data.tags || []) publishedTags.add(tag);
+    const isIntro = ['', 'about'].includes(slug);
+    if (!isIntro) for (const tag of data.tags || []) publishedTags.add(tag);
     if (!(await exists(target))) { errors.push(`Published article is missing: ${name}`); continue; }
     const html = await readFile(target, 'utf8');
-    const expectComments = !isHome && blog.comments.enabled && data.comments !== false;
+    const expectComments = !isIntro && blog.comments.enabled && data.comments !== false;
     if (html.includes('<giscus-comments') !== expectComments) errors.push(`Article comment setting is incorrect: ${name}`);
     if (expectComments && (!html.includes(`data-repo-id="${blog.comments.repoId}"`) || !html.includes('data-reactions-enabled="1"'))) errors.push(`Article reaction configuration is missing: ${name}`);
     if (!html.includes('data-article=')) errors.push(`Owner editing control is missing: ${name}`);
-    if (isHome) {
-      if (html.includes('class="article-meta"') || html.includes('aria-label="태그"')) errors.push('Home introduction includes article metadata.');
-      if (!data.sidebar?.hidden) errors.push('Home introduction must be hidden from category navigation.');
+    if (isIntro) {
+      if (html.includes('class="article-meta"') || html.includes('aria-label="태그"')) errors.push('Introduction includes article metadata.');
+      if (!data.sidebar?.hidden) errors.push('Introduction must be hidden from category navigation.');
       const sourceId = name.replace(/\.mdx?$/, '');
-      if (!html.includes(`data-article="${sourceId}"`)) errors.push('Home introduction editing points to the wrong source.');
+      if (!html.includes(`data-article="${sourceId}"`)) errors.push('Introduction editing points to the wrong source.');
       const archive = await readFile(join(output, 'posts/index.html'), 'utf8');
-      if (archive.includes(`<h3><a href="${base}"`)) errors.push('Home introduction was included in the post archive.');
+      if (archive.includes(`class="post-row" href="${base}${slug ? `${slug}/` : ''}"`)) errors.push('Introduction was included in the post archive.');
     }
   }
 }
@@ -72,7 +72,7 @@ for (const tag of draftTags) {
   if (!publishedTags.has(tag) && await exists(join(output, 'tags', tag, 'index.html'))) errors.push(`Draft-only tag was published: ${tag}`);
 }
 if (!(await exists(join(output, 'pagefind/pagefind.js')))) errors.push('Search index is missing.');
-for (const page of ['index.html', 'posts/index.html', 'admin/index.html']) {
+for (const page of ['index.html', 'about/index.html', 'posts/index.html', 'admin/index.html']) {
   if ((await readFile(join(output, page), 'utf8')).includes('<giscus-comments')) errors.push(`Comments were included on a non-article page: ${page}`);
 }
 const admin = await readFile(join(output, 'admin/index.html'), 'utf8');
