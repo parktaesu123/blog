@@ -7,16 +7,10 @@ export const blog = {
   // 홈과 소개 페이지의 프로필에 표시됩니다.
   profile: {
     name: '박태수',
-    role: '매일 조금씩 나아지는 개발자',
+    role: '',
     links: [
       { label: 'GitHub', href: 'https://github.com/parktaesu123' },
     ],
-  },
-  // 메인 첫 화면 문구입니다.
-  hero: {
-    badge: '日新又日新',
-    headline: '어제보다 나은 오늘을',
-    rotating: ['기록합니다.', '배우고 있습니다.', '만들어 갑니다.'],
   },
   repository: 'parktaesu123/blog',
   admin: {

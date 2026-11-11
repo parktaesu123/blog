@@ -50,8 +50,3 @@ export function coverOf(post: Post): string | undefined {
   return src.startsWith('/') ? sitePath(src) : undefined;
 }
 
-/** Rough reading time for Korean prose, about 500 characters a minute. */
-export function readingMinutes(post: Post) {
-  const text = (post.body ?? '').replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/<[^>]+>/g, '').replace(/[#>*`_~\-|]/g, '').replace(/\s+/g, '');
-  return Math.max(1, Math.round(text.length / 500));
-}

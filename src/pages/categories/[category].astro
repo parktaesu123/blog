@@ -17,7 +17,7 @@ const { id, label, posts, categoryPosts } = Astro.props;
 ---
 <BlogLayout title={label} description={`${label} 카테고리의 글 모음`}>
   <PageBanner slot="banner">
-    <p class="banner-eyebrow">Category</p>
+    <p class="banner-eyebrow">카테고리</p>
     <h1>{label}</h1>
     <p class="banner-lede">{categoryPosts.length}개의 글</p>
   </PageBanner>

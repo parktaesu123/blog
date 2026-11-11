@@ -14,7 +14,7 @@ const year = new Date().getFullYear();
       <p>{blog.description}</p>
       <ul class="footer-links">
         <li><a href={sitePath('about/')}>소개</a></li>
-        {blog.profile.links.map((link) => <li><a href={link.href} target="_blank" rel="noopener">{link.label} ↗</a></li>)}
+        {blog.profile.links.map((link) => <li><a href={link.href} target="_blank" rel="noopener">{link.label}</a></li>)}
       </ul>
     </div>
     <section class="footer-col" aria-labelledby="footer-recent">
@@ -32,5 +32,5 @@ const year = new Date().getFullYear();
       </ul>
     </section>
   </div>
-  <p class="footer-bottom">© {year} {blog.profile.name}. All rights reserved.</p>
+  <p class="footer-bottom">© {year} {blog.profile.name}</p>
 </footer>

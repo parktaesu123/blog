@@ -8,9 +8,8 @@ const posts = await getPosts();
 ---
 <BlogLayout title="모든 글" description="개발과 일상의 기록을 발행일 순으로 모았습니다.">
   <PageBanner slot="banner">
-    <p class="banner-eyebrow">Archive</p>
     <h1>모든 글</h1>
-    <p class="banner-lede">개발하며 배운 것과 일상에서 발견한 것을 발행일 순으로 모았습니다. · {posts.length}개의 글</p>
+    <p class="banner-lede">{posts.length}개의 글</p>
   </PageBanner>
   <CategoryTabs posts={posts} />
   <PostList posts={posts} />

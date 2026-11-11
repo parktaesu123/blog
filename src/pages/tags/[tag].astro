@@ -3,7 +3,6 @@ import BlogLayout from '../../layouts/BlogLayout.astro';
 import PageBanner from '../../components/PageBanner.astro';
 import PostList from '../../components/PostList.astro';
 import { getPosts, tagsOf, type Post } from '../../utils/posts';
-import { sitePath } from '../../utils/paths';
 
 export async function getStaticPaths() {
   const posts = await getPosts();
@@ -17,9 +16,9 @@ const { tag, posts } = Astro.props;
 ---
 <BlogLayout title={`#${tag}`} description={`${tag}에 관한 글 모음`}>
   <PageBanner slot="banner">
-    <p class="banner-eyebrow">Tag</p>
+    <p class="banner-eyebrow">태그</p>
     <h1>#{tag}</h1>
-    <p class="banner-lede">{posts.length}개의 글 · <a href={sitePath('posts/')}>모든 글 보기</a></p>
+    <p class="banner-lede">{posts.length}개의 글</p>
   </PageBanner>
   <PostList posts={posts} />
 </BlogLayout>

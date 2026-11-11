@@ -12,7 +12,6 @@ const { Content } = await render(intro);
 ---
 <BlogLayout title="소개" description={intro.data.description} searchable>
   <PageBanner slot="banner">
-    <p class="banner-eyebrow">About</p>
     <h1 data-pagefind-meta="title">{intro.data.title}</h1>
     <Profile size="large" />
   </PageBanner>
