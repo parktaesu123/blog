@@ -6,7 +6,7 @@ import PostCover from '../components/PostCover.astro';
 import Comments from '../components/Comments.astro';
 import OwnerControls from '../components/OwnerControls.astro';
 import { blog } from '../../blog.config.mjs';
-import { categoryIdOf, categoryOf, coverOf, getPosts, readingMinutes, sourceIdOf, type Post } from '../utils/posts';
+import { categoryIdOf, categoryOf, getPosts, readingMinutes, sourceIdOf, type Post } from '../utils/posts';
 import { categoryPath, sitePath, tagPath } from '../utils/paths';
 import { formatDate } from '../utils/dates';
 
@@ -27,7 +27,7 @@ const publishedAt = post.data.publishedAt!;
 const updatedAt = post.data.updatedAt;
 ---
 <BlogLayout title={post.data.title} description={post.data.description || blog.description} searchable article wide={hasOutline}>
-  <PageBanner slot="banner" variant="article" image={coverOf(post)}>
+  <PageBanner slot="banner" variant="article">
     <a class="banner-badge" href={categoryPath(categoryIdOf(post))}>{categoryOf(post)}</a>
     <h1 data-pagefind-meta="title">{post.data.title}</h1>
     {post.data.description && <p class="banner-lede">{post.data.description}</p>}

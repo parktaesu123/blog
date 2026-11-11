@@ -29,7 +29,7 @@ const inAbout = startsWith(sitePath('about/'));
       <a class="nav-link" href={sitePath('about/')} aria-current={inAbout ? 'page' : undefined}>소개</a>
     </nav>
 
-    <a class="brand" href={sitePath()} translate="no"><span class="brand-light" aria-hidden="true"></span>{blog.title}</a>
+    <a class="brand" href={sitePath()} translate="no">{blog.title}</a>
 
     <div class="header-tools">
       <button id="open-search" class="icon-button" type="button" aria-label="검색 (⌘K)" title="검색 (⌘K)">

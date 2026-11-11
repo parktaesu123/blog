@@ -10,7 +10,7 @@ const year = new Date().getFullYear();
 <footer class="site-footer" data-pagefind-ignore>
   <div class="footer-inner">
     <div class="footer-brand">
-      <a class="brand" href={sitePath()} translate="no"><span class="brand-light" aria-hidden="true"></span>{blog.title}</a>
+      <a class="brand" href={sitePath()} translate="no">{blog.title}</a>
       <p>{blog.description}</p>
       <ul class="footer-links">
         <li><a href={sitePath('about/')}>소개</a></li>
@@ -32,5 +32,5 @@ const year = new Date().getFullYear();
       </ul>
     </section>
   </div>
-  <p class="footer-bottom">© {year} {blog.profile.name}. 오늘도 불을 켜 두었습니다.</p>
+  <p class="footer-bottom">© {year} {blog.profile.name}. All rights reserved.</p>
 </footer>

@@ -12,13 +12,11 @@ export const blog = {
       { label: 'GitHub', href: 'https://github.com/parktaesu123' },
     ],
   },
-  // 메인 첫 화면 문구입니다. image에 public/ 아래 사진 경로(예: '/images/room.jpg')를 넣으면
-  // 기본 조명 일러스트 대신 그 사진이 배경으로 깔립니다.
+  // 메인 첫 화면 문구입니다.
   hero: {
     badge: '日新又日新',
     headline: '어제보다 나은 오늘을',
     rotating: ['기록합니다.', '배우고 있습니다.', '만들어 갑니다.'],
-    image: '',
   },
   repository: 'parktaesu123/blog',
   admin: {
