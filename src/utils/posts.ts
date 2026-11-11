@@ -1,5 +1,5 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { isIntroduction } from './paths';
+import { isIntroduction, sitePath } from './paths';
 import { categoryConfig, resolveCategory } from './categories';
 
 export type Post = CollectionEntry<'docs'>;
@@ -39,4 +39,19 @@ export function sourceIdOf(entry: Post) {
 
 export function tagsOf(posts: Post[]) {
   return [...new Set(posts.flatMap((post) => post.data.tags))].sort((a, b) => a.localeCompare(b, 'ko'));
+}
+
+/** The first image in the body, which the editor inserts as the post's cover. */
+export function coverOf(post: Post): string | undefined {
+  const match = post.body?.match(/!\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)/) ?? post.body?.match(/<img[^>]+src="([^"]+)"/);
+  const src = match?.[1];
+  if (!src) return undefined;
+  if (/^https?:\/\//.test(src)) return src;
+  return src.startsWith('/') ? sitePath(src) : undefined;
+}
+
+/** Rough reading time for Korean prose, about 500 characters a minute. */
+export function readingMinutes(post: Post) {
+  const text = (post.body ?? '').replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/<[^>]+>/g, '').replace(/[#>*`_~\-|]/g, '').replace(/\s+/g, '');
+  return Math.max(1, Math.round(text.length / 500));
 }

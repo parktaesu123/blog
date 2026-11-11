@@ -1,15 +1,36 @@
 ---
 import { blog } from '../../blog.config.mjs';
-import { sitePath } from '../utils/paths';
+import { getPosts, groupByCategory } from '../utils/posts';
+import { categoryPath, sitePath } from '../utils/paths';
+import { formatDate } from '../utils/dates';
+const posts = await getPosts();
+const groups = groupByCategory(posts);
 const year = new Date().getFullYear();
 ---
 <footer class="site-footer" data-pagefind-ignore>
-  <div class="site-footer-inner">
-    <p>© {year} {blog.profile.name}</p>
-    <nav aria-label="하단 메뉴">
-      <a href={sitePath('posts/')}>글</a>
-      <a href={sitePath('about/')}>소개</a>
-      {blog.profile.links.map((link) => <a href={link.href} target="_blank" rel="noopener">{link.label}</a>)}
-    </nav>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a class="brand" href={sitePath()} translate="no"><span class="brand-light" aria-hidden="true"></span>{blog.title}</a>
+      <p>{blog.description}</p>
+      <ul class="footer-links">
+        <li><a href={sitePath('about/')}>소개</a></li>
+        {blog.profile.links.map((link) => <li><a href={link.href} target="_blank" rel="noopener">{link.label} ↗</a></li>)}
+      </ul>
+    </div>
+    <section class="footer-col" aria-labelledby="footer-recent">
+      <h2 id="footer-recent">최근 글</h2>
+      <ul>
+        {posts.slice(0, 4).map((post) => (
+          <li><a href={sitePath(`${post.id}/`)}><span>{post.data.title}</span><time datetime={post.data.publishedAt!.toISOString()}>{formatDate(post.data.publishedAt!)}</time></a></li>
+        ))}
+      </ul>
+    </section>
+    <section class="footer-col" aria-labelledby="footer-categories">
+      <h2 id="footer-categories">카테고리</h2>
+      <ul>
+        {groups.map((group) => <li><a href={categoryPath(group.id)}><span>{group.label}</span><small>{group.posts.length}</small></a></li>)}
+      </ul>
+    </section>
   </div>
+  <p class="footer-bottom">© {year} {blog.profile.name}. 오늘도 불을 켜 두었습니다.</p>
 </footer>

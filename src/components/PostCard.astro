@@ -1,0 +1,23 @@
+---
+import PostCover from './PostCover.astro';
+import { categoryOf, readingMinutes, type Post } from '../utils/posts';
+import { sitePath } from '../utils/paths';
+import { formatDate } from '../utils/dates';
+interface Props { post: Post; }
+const { post } = Astro.props;
+---
+<article class="post-card">
+  <a class="post-card-link" href={sitePath(`${post.id}/`)}>
+    <PostCover post={post} />
+    <span class="post-card-body">
+      <span class="post-card-category">{categoryOf(post)}</span>
+      <h3 class="post-card-title">{post.data.title}</h3>
+      {post.data.description && <span class="post-card-excerpt">{post.data.description}</span>}
+      <span class="post-card-meta">
+        {post.data.publishedAt && <time datetime={post.data.publishedAt.toISOString()}>{formatDate(post.data.publishedAt)}</time>}
+        <span aria-hidden="true">·</span>
+        <span>{readingMinutes(post)}분 읽기</span>
+      </span>
+    </span>
+  </a>
+</article>

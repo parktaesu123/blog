@@ -1,10 +1,12 @@
 ---
 import { render } from 'astro:content';
 import BlogLayout from '../layouts/BlogLayout.astro';
+import PageBanner from '../components/PageBanner.astro';
+import PostCover from '../components/PostCover.astro';
 import Comments from '../components/Comments.astro';
 import OwnerControls from '../components/OwnerControls.astro';
 import { blog } from '../../blog.config.mjs';
-import { categoryIdOf, categoryOf, getPosts, sourceIdOf, type Post } from '../utils/posts';
+import { categoryIdOf, categoryOf, coverOf, getPosts, readingMinutes, sourceIdOf, type Post } from '../utils/posts';
 import { categoryPath, sitePath, tagPath } from '../utils/paths';
 import { formatDate } from '../utils/dates';
 
@@ -19,40 +21,73 @@ interface Props { post: Post; newer?: Post; older?: Post; }
 const { post, newer, older } = Astro.props;
 const { Content, headings } = await render(post);
 const outline = post.data.tableOfContents === false ? [] : headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const hasOutline = outline.length > 1;
 const showComments = blog.comments.enabled && post.data.comments;
 const publishedAt = post.data.publishedAt!;
+const updatedAt = post.data.updatedAt;
 ---
-<BlogLayout title={post.data.title} description={post.data.description || blog.description} searchable article wide={outline.length > 1}>
-  <div class:list={['article-layout', { 'has-outline': outline.length > 1 }]}>
+<BlogLayout title={post.data.title} description={post.data.description || blog.description} searchable article wide={hasOutline}>
+  <PageBanner slot="banner" variant="article" image={coverOf(post)}>
+    <a class="banner-badge" href={categoryPath(categoryIdOf(post))}>{categoryOf(post)}</a>
+    <h1 data-pagefind-meta="title">{post.data.title}</h1>
+    {post.data.description && <p class="banner-lede">{post.data.description}</p>}
+    <p class="article-meta">
+      <span>{blog.profile.name}</span>
+      <span aria-hidden="true">·</span>
+      <time datetime={publishedAt.toISOString()}>{formatDate(publishedAt)}</time>
+      {updatedAt && formatDate(updatedAt) !== formatDate(publishedAt) && <>
+        <span aria-hidden="true">·</span>
+        <span>수정 <time datetime={updatedAt.toISOString()}>{formatDate(updatedAt)}</time></span>
+      </>}
+      <span aria-hidden="true">·</span>
+      <span>{readingMinutes(post)}분 읽기</span>
+    </p>
+  </PageBanner>
+
+  <div class:list={['article-layout', { 'has-outline': hasOutline }]}>
     <article class="article">
-      <header class="article-header">
-        <p class="article-meta">
-          <a href={categoryPath(categoryIdOf(post))}>{categoryOf(post)}</a>
-          <span aria-hidden="true">·</span>
-          <time datetime={publishedAt.toISOString()}>{formatDate(publishedAt)}</time>
-        </p>
-        <h1 data-pagefind-meta="title">{post.data.title}</h1>
-        {post.data.description && <p class="article-deck">{post.data.description}</p>}
-        {post.data.tags.length > 0 && <ul class="post-tags" aria-label="태그">
-          {post.data.tags.map((tag) => <li><a href={tagPath(tag)}>#{tag}</a></li>)}
-        </ul>}
-      </header>
+      {post.data.tags.length > 0 && <ul class="post-tags" aria-label="태그">
+        {post.data.tags.map((tag) => <li><a href={tagPath(tag)}>#{tag}</a></li>)}
+      </ul>}
+      {hasOutline && <details class="toc-box" open data-pagefind-ignore>
+        <summary>목차</summary>
+        <ol>
+          {outline.map((heading) => <li class={`depth-${heading.depth}`}><a href={`#${heading.slug}`} data-toc-link={heading.slug}>{heading.text}</a></li>)}
+        </ol>
+      </details>}
       <div class="prose"><Content /></div>
       <div class="article-actions" data-pagefind-ignore>
         <a class="text-link" href={sitePath('posts/')}>← 글 목록</a>
         <OwnerControls article={sourceIdOf(post)} />
       </div>
       {(newer || older) && <nav class="article-pager" aria-label="이전·다음 글" data-pagefind-ignore>
-        {older ? <a class="pager-link" href={sitePath(`${older.id}/`)}><span>이전 글</span><strong>{older.data.title}</strong></a> : <span></span>}
-        {newer ? <a class="pager-link pager-next" href={sitePath(`${newer.id}/`)}><span>다음 글</span><strong>{newer.data.title}</strong></a> : <span></span>}
+        {older ? <a class="pager-link" href={sitePath(`${older.id}/`)}><PostCover post={older} class="pager-thumb" /><span class="pager-text"><span>← 이전 글</span><strong>{older.data.title}</strong></span></a> : <span></span>}
+        {newer ? <a class="pager-link pager-next" href={sitePath(`${newer.id}/`)}><span class="pager-text"><span>다음 글 →</span><strong>{newer.data.title}</strong></span><PostCover post={newer} class="pager-thumb" /></a> : <span></span>}
       </nav>}
       {showComments && <Comments />}
     </article>
-    {outline.length > 1 && <aside class="article-outline" aria-label="목차" data-pagefind-ignore>
-      <p>목차</p>
+    {hasOutline && <aside class="article-outline" aria-label="목차" data-pagefind-ignore>
+      <p>On this page</p>
       <ol>
-        {outline.map((heading) => <li class={`depth-${heading.depth}`}><a href={`#${heading.slug}`}>{heading.text}</a></li>)}
+        {outline.map((heading) => <li class={`depth-${heading.depth}`}><a href={`#${heading.slug}`} data-toc-link={heading.slug}>{heading.text}</a></li>)}
       </ol>
     </aside>}
   </div>
 </BlogLayout>
+<script>
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]')];
+  const headings = [...new Set(links.map((link) => link.dataset.tocLink!))]
+    .map((id) => document.getElementById(id))
+    .filter((heading): heading is HTMLElement => Boolean(heading));
+  if (headings.length) {
+    const visible = new Set<string>();
+    const mark = (id: string) => links.forEach((link) => link.toggleAttribute('data-active', link.dataset.tocLink === id));
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) entry.isIntersecting ? visible.add(entry.target.id) : visible.delete(entry.target.id);
+      const current = headings.find((heading) => visible.has(heading.id))
+        ?? [...headings].reverse().find((heading) => heading.getBoundingClientRect().top < 120);
+      if (current) mark(current.id);
+    }, { rootMargin: '-90px 0px -65% 0px' });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+</script>

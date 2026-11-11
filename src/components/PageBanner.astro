@@ -1,0 +1,37 @@
+---
+import RoomScene from './RoomScene.astro';
+
+interface Props {
+  /** home: full-height hero with the desk scene; page: compact; article: post cover. */
+  variant?: 'home' | 'page' | 'article';
+  /** A photo to lay under the banner instead of the illustration. */
+  image?: string;
+}
+const { variant = 'page', image } = Astro.props;
+---
+<section class:list={['banner', `banner-${variant}`, { 'banner-has-image': image }]}>
+  {image && <img class="banner-image" src={image} alt="" decoding="async" fetchpriority="high" />}
+  <div class="banner-stripes" aria-hidden="true"></div>
+  {!image && variant === 'home' && <div class="banner-scene"><RoomScene /></div>}
+  {!image && variant !== 'home' && (
+    <svg class="banner-lamp" viewBox="0 0 240 320" aria-hidden="true" preserveAspectRatio="xMidYMin meet">
+      <defs>
+        <linearGradient id={`beam-${variant}`} x1="0" y1="150" x2="0" y2="320" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#ffe0a6" stop-opacity=".34" />
+          <stop offset="1" stop-color="#ffd58f" stop-opacity="0" />
+        </linearGradient>
+        <radialGradient id={`glow-${variant}`} cx="120" cy="156" r="130" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#ffd58f" stop-opacity=".5" />
+          <stop offset="1" stop-color="#f0a94a" stop-opacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="120" cy="156" r="130" fill={`url(#glow-${variant})`} />
+      <polygon points="72,154 168,154 240,320 0,320" fill={`url(#beam-${variant})`} />
+      <path d="M120 0v94" stroke="#0b0a09" stroke-width="2.5" />
+      <polygon points="106,92 134,92 172,152 68,152" fill="#0e0d0c" />
+      <ellipse cx="120" cy="152" rx="52" ry="6" fill="#ffe7b8" />
+      <ellipse class="room-bulb" cx="120" cy="155" rx="15" ry="6" fill="#fff4d6" />
+    </svg>
+  )}
+  <div class="banner-inner"><slot /></div>
+</section>

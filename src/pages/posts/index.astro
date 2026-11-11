@@ -1,15 +1,17 @@
 ---
 import BlogLayout from '../../layouts/BlogLayout.astro';
+import PageBanner from '../../components/PageBanner.astro';
 import PostList from '../../components/PostList.astro';
 import CategoryTabs from '../../components/CategoryTabs.astro';
 import { getPosts } from '../../utils/posts';
 const posts = await getPosts();
 ---
 <BlogLayout title="모든 글" description="개발과 일상의 기록을 발행일 순으로 모았습니다.">
-  <header class="page-header">
+  <PageBanner slot="banner">
+    <p class="banner-eyebrow">Archive</p>
     <h1>모든 글</h1>
-    <p class="page-lede">개발하며 배운 것과 일상에서 발견한 것을 발행일 순으로 모았습니다.</p>
-  </header>
+    <p class="banner-lede">개발하며 배운 것과 일상에서 발견한 것을 발행일 순으로 모았습니다. · {posts.length}개의 글</p>
+  </PageBanner>
   <CategoryTabs posts={posts} />
   <PostList posts={posts} />
 </BlogLayout>

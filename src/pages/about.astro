@@ -1,6 +1,7 @@
 ---
 import { render } from 'astro:content';
 import BlogLayout from '../layouts/BlogLayout.astro';
+import PageBanner from '../components/PageBanner.astro';
 import Profile from '../components/Profile.astro';
 import OwnerControls from '../components/OwnerControls.astro';
 import { getIntroduction, sourceIdOf } from '../utils/posts';
@@ -10,11 +11,12 @@ if (!intro) throw new Error('소개글(slug: about)을 찾을 수 없습니다.'
 const { Content } = await render(intro);
 ---
 <BlogLayout title="소개" description={intro.data.description} searchable>
-  <header class="page-header about-header">
+  <PageBanner slot="banner">
+    <p class="banner-eyebrow">About</p>
+    <h1 data-pagefind-meta="title">{intro.data.title}</h1>
     <Profile size="large" />
-  </header>
+  </PageBanner>
   <article class="about-body">
-    <h1 class="about-title" data-pagefind-meta="title">{intro.data.title}</h1>
     <div class="prose"><Content /></div>
   </article>
   <div class="article-actions">

@@ -1,0 +1,11 @@
+---
+import { categoryOf, coverOf, type Post } from '../utils/posts';
+interface Props { post: Post; class?: string; }
+const { post, class: className } = Astro.props;
+const cover = coverOf(post);
+---
+<span class:list={['post-cover', className, { 'post-cover-fallback': !cover }]}>
+  {cover
+    ? <img src={cover} alt="" loading="lazy" decoding="async" />
+    : <span class="post-cover-label" aria-hidden="true">{categoryOf(post)}</span>}
+</span>

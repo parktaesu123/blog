@@ -1,29 +1,91 @@
 ---
 import OwnerControls from './OwnerControls.astro';
 import { blog } from '../../blog.config.mjs';
-import { sitePath } from '../utils/paths';
+import { getPosts, groupByCategory } from '../utils/posts';
+import { categoryPath, sitePath } from '../utils/paths';
 
+const posts = await getPosts();
+const groups = groupByCategory(posts);
 const current = decodeURIComponent(Astro.url.pathname);
-const links = [
-  { label: '글', href: sitePath('posts/'), match: [sitePath('posts/'), sitePath('categories/'), sitePath('tags/')] },
-  { label: '소개', href: sitePath('about/'), match: [sitePath('about/')] },
-];
-const isCurrent = (match: string[]) => match.some((path) => current.startsWith(path)) ? 'page' : undefined;
+const startsWith = (...paths: string[]) => paths.some((path) => current.startsWith(path));
+const inCategories = startsWith(sitePath('categories/'));
+const inPosts = startsWith(sitePath('posts/'), sitePath('tags/'));
+const inAbout = startsWith(sitePath('about/'));
 ---
-<header class="site-header" data-pagefind-ignore>
-  <div class="site-header-inner">
-    <a class="brand" href={sitePath()} translate="no">{blog.title}</a>
-    <nav class="site-nav" aria-label="주요 메뉴">
-      {links.map((link) => <a href={link.href} aria-current={isCurrent(link.match)}>{link.label}</a>)}
+<header class="site-header" data-site-header data-pagefind-ignore>
+  <div class="header-bar">
+    <nav class="header-nav" aria-label="주요 메뉴">
+      <div class="nav-menu" data-nav-menu>
+        <button class="nav-link nav-trigger" type="button" aria-expanded="false" aria-controls="category-menu" data-current={inCategories || undefined}>
+          카테고리
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="nav-dropdown" id="category-menu">
+          <a href={sitePath('posts/')}><span>전체 글</span><small>{posts.length}</small></a>
+          {groups.map((group) => <a href={categoryPath(group.id)} aria-current={current === decodeURIComponent(categoryPath(group.id)) ? 'page' : undefined}><span>{group.label}</span><small>{group.posts.length}</small></a>)}
+        </div>
+      </div>
+      <a class="nav-link" href={sitePath('posts/')} aria-current={inPosts ? 'page' : undefined}>글 목록</a>
+      <a class="nav-link" href={sitePath('about/')} aria-current={inAbout ? 'page' : undefined}>소개</a>
     </nav>
+
+    <a class="brand" href={sitePath()} translate="no"><span class="brand-light" aria-hidden="true"></span>{blog.title}</a>
+
     <div class="header-tools">
       <button id="open-search" class="icon-button" type="button" aria-label="검색 (⌘K)" title="검색 (⌘K)">
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       </button>
-      <a class="icon-button" href={`https://github.com/${blog.admin.owner}`} aria-label="GitHub" title="GitHub" target="_blank" rel="noopener">
+      <a class="icon-button header-github" href={`https://github.com/${blog.admin.owner}`} aria-label="GitHub" title="GitHub" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
       </a>
       <OwnerControls />
+      <button class="icon-button menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="메뉴 열기" data-menu-toggle>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
     </div>
   </div>
+
+  <nav class="mobile-menu" id="mobile-menu" aria-label="모바일 메뉴" hidden>
+    <a href={sitePath()}>홈</a>
+    <a href={sitePath('posts/')}>전체 글 <small>{posts.length}</small></a>
+    {groups.map((group) => <a class="mobile-sub" href={categoryPath(group.id)}>{group.label} <small>{group.posts.length}</small></a>)}
+    <a href={sitePath('about/')}>소개</a>
+    <a href={`https://github.com/${blog.admin.owner}`} target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
 </header>
+<script>
+  const header = document.querySelector<HTMLElement>('[data-site-header]')!;
+  const menu = header.querySelector<HTMLElement>('[data-nav-menu]')!;
+  const trigger = menu.querySelector<HTMLButtonElement>('.nav-trigger')!;
+  const toggle = header.querySelector<HTMLButtonElement>('[data-menu-toggle]')!;
+  const mobile = header.querySelector<HTMLElement>('#mobile-menu')!;
+
+  function setDropdown(open: boolean) {
+    menu.toggleAttribute('data-open', open);
+    trigger.setAttribute('aria-expanded', String(open));
+  }
+  function setMobile(open: boolean) {
+    mobile.hidden = !open;
+    header.toggleAttribute('data-menu-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? '메뉴 닫기' : '메뉴 열기');
+  }
+  trigger.addEventListener('click', () => setDropdown(!menu.hasAttribute('data-open')));
+  toggle.addEventListener('click', () => setMobile(mobile.hidden));
+  document.addEventListener('click', (event) => {
+    if (!menu.contains(event.target as Node)) setDropdown(false);
+    if (!header.contains(event.target as Node)) setMobile(false);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    if (menu.hasAttribute('data-open')) { setDropdown(false); trigger.focus(); }
+    if (!mobile.hidden) { setMobile(false); toggle.focus(); }
+  });
+
+  const update = () => {
+    header.toggleAttribute('data-scrolled', window.scrollY > 24);
+    document.documentElement.toggleAttribute('data-scrolled-far', window.scrollY > 640);
+  };
+  update();
+  window.addEventListener('scroll', update, { passive: true });
+</script>

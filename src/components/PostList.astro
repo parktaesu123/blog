@@ -1,22 +1,27 @@
 ---
-import { categoryOf, type Post } from '../utils/posts';
+import PostCover from './PostCover.astro';
+import { categoryOf, readingMinutes, type Post } from '../utils/posts';
 import { sitePath } from '../utils/paths';
 import { formatDate } from '../utils/dates';
 interface Props { posts: Post[]; }
 const { posts } = Astro.props;
 ---
 {posts.length === 0
-  ? <p class="post-list-empty not-content">아직 발행된 글이 없습니다.</p>
-  : <ul class="post-list not-content">
+  ? <p class="post-list-empty">아직 발행된 글이 없습니다.</p>
+  : <ul class="post-list">
       {posts.map((post) => (
         <li>
           <a class="post-row" href={sitePath(`${post.id}/`)}>
-            <span class="post-row-head">
+            <span class="post-row-body">
+              <span class="post-row-meta">
+                <span class="post-row-category">{categoryOf(post)}</span>
+                {post.data.publishedAt && <time datetime={post.data.publishedAt.toISOString()}>{formatDate(post.data.publishedAt)}</time>}
+                <span>{readingMinutes(post)}분 읽기</span>
+              </span>
               <span class="post-row-title">{post.data.title}</span>
-              <span class="post-row-category">{categoryOf(post)}</span>
-              {post.data.publishedAt && <time datetime={post.data.publishedAt.toISOString()}>{formatDate(post.data.publishedAt)}</time>}
+              {post.data.description && <span class="post-row-excerpt">{post.data.description}</span>}
             </span>
-            {post.data.description && <span class="post-row-excerpt">{post.data.description}</span>}
+            <PostCover post={post} class="post-row-thumb" />
           </a>
         </li>
       ))}
